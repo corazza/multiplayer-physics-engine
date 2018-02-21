@@ -1,0 +1,137 @@
+{
+  "variant": {
+    "label": "Debug",
+    "keywordSettings": {
+      "buildType": "debug"
+    },
+    "description": "Emit debug information without performing optimizations"
+  },
+  "activeEnvironments": [],
+  "codeModel": {
+    "configurations": [
+      {
+        "name": "Debug",
+        "projects": [
+          {
+            "buildDirectory": "/home/jan/Code/game/build",
+            "name": "Game",
+            "sourceDirectory": "/home/jan/Code/game",
+            "targets": [
+              {
+                "artifacts": [
+                  "/home/jan/Code/game/build/server/Server"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/server",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "server.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "Server",
+                "linkLanguageFlags": "-std=c++11 -pthread -g",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
+                "linkPath": "-L/home/jan/Code/game/common",
+                "linkerLanguage": "CXX",
+                "name": "Server",
+                "sourceDirectory": "/home/jan/Code/game/server",
+                "type": "EXECUTABLE"
+              },
+              {
+                "artifacts": [
+                  "/home/jan/Code/game/build/client/Client"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/client",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/client"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/client"
+                      },
+                      {
+                        "path": "/usr/include/SDL2"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "client.cpp",
+                      "render.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "Client",
+                "linkLanguageFlags": "-std=c++11 -pthread -g",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libSDL2_image.so -L/usr/lib  -lSDL2 /usr/lib/libboost_system.so",
+                "linkPath": "-L/home/jan/Code/game/common",
+                "linkerLanguage": "CXX",
+                "name": "Client",
+                "sourceDirectory": "/home/jan/Code/game/client",
+                "type": "EXECUTABLE"
+              },
+              {
+                "artifacts": [
+                  "/home/jan/Code/game/build/common/libCommon.a"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/common",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/common"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common/nlohmann"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "physics.cpp",
+                      "scene_objects.cpp",
+                      "scene.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "libCommon.a",
+                "linkerLanguage": "CXX",
+                "name": "Common",
+                "sourceDirectory": "/home/jan/Code/game/common",
+                "type": "STATIC_LIBRARY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "cookie": "0.6038912794623912",
+    "inReplyTo": "codemodel",
+    "type": "reply"
+  }
+}

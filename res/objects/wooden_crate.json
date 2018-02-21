@@ -1,0 +1,17 @@
+{
+    "resId": "wooden_crate",
+    "box2d": {
+        "type": "dynamic",
+        "dimensions": [
+            1,
+            1
+        ],
+        "density": 1,
+        "friction": 0.3,
+        "angle": 0
+    },
+    "render": {
+        "type": "rect",
+        "image": "wooden_crate.png"
+    }
+}
