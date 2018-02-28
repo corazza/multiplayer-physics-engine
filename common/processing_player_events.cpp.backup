@@ -1,0 +1,45 @@
+  for (auto &playerEvent : playerEvents) {
+    // TODO move to player state
+    auto lastUsed = lastAbility.find(playerEvent.first);
+    auto currentUse = Time::now();
+
+    if (lastUsed != lastAbility.end()) {
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+          currentUse - lastUsed->second);
+      if (duration.count() < 350)
+        continue;
+      lastUsed->second = currentUse;
+    } else {
+      lastAbility.insert(std::make_pair(playerEvent.first, currentUse));
+    }
+
+    if (playerEvent.second["type"] == "spawn") {
+      b2Vec2 pos(playerEvent.second["action position"][0],
+                 playerEvent.second["action position"][1]);
+
+      b2Vec2 dpos = pos - playerEvent.first->position();
+      dpos.Normalize();
+      b2Vec2 vel = dpos;
+
+      vel *= 350;
+      dpos *= 5;
+
+      pos = playerEvent.first->position() + dpos;
+
+      json def =
+          cache->getJSONDocument("res/objects/", playerEvent.second["resId"]);
+      std::string playerId = playerEvent.second["player id"];
+
+      def["angle"] = 0;
+      def["position"][0] = pos.x;
+      def["position"][1] = pos.y;
+      def["impulse"][0] = vel.x;
+      def["impulse"][1] = vel.y;
+      def["sceneId"] = playerId + "_spawn_" +
+                       std::to_string(playerEvent.first->spawnCount++);
+
+      addToObjectCreation(def);
+    }
+  }
+
+  playerEvents.clear();

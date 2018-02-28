@@ -43,7 +43,7 @@ struct Renderer {
   std::map<std::string, SDL_Texture *> textures;
   std::vector<RenderTarget *> targets;
   b2Vec2 *cameraPosition;
-  double metersToPixels = 20;
+  double metersToPixels = 17;
 
   Renderer(SDL_Renderer *renderer);
   // ~Renderer();

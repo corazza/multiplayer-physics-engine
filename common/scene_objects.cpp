@@ -1,13 +1,11 @@
 #include "scene_objects.hpp"
 
-double radiansToDegrees(float32 radians) {
-  return -int(round(180 * radians / M_PI)) % 360;
+bool Controller::active() {
+  return movingLeft || movingRight || jumping || stopping;
 }
 
-Box2DObject::Box2DObject(b2Body *body) : body(body) {
-  body->SetUserData(this);
+Object::Object(b2Body *body) : body(body) { body->SetUserData(this); }
+
+bool Object::resting() {
+  return body->GetLinearVelocity().LengthSquared() == 0;
 }
-
-b2Vec2 Box2DObject::position() { return body->GetPosition(); }
-
-double Box2DObject::angle() { return radiansToDegrees(body->GetAngle()); }

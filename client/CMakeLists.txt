@@ -19,7 +19,7 @@ set(CLIENT_DEPEND_LIBS
     ${Boost_SYSTEM_LIBRARY}
 )
 
-set(CLIENT_SOURCES client.cpp render.cpp)
+set(CLIENT_SOURCES client.cpp render.cpp client.cpp client_network.cpp main.cpp)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(${CLIENT_INCLUDE_DIRS})

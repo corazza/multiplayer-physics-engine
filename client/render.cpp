@@ -6,8 +6,13 @@
 
 #include "render.hpp"
 
+double radiansToDegrees(float32 radians) {
+  return -int(round(180 * radians / M_PI)) % 360;
+}
+
 void RectTarget::render(Renderer *sdlRenderer) {
-  std::pair<int, int> position = sdlRenderer->sceneToScreen(target->position());
+  std::pair<int, int> position =
+      sdlRenderer->sceneToScreen(target->body->GetPosition());
 
   b2Vec2 screenDim = dim;
   screenDim *= sdlRenderer->metersToPixels;
@@ -18,16 +23,14 @@ void RectTarget::render(Renderer *sdlRenderer) {
   dst.w = round(screenDim.x * 2);
   dst.h = round(screenDim.y * 2);
 
-  // printf("rendering rect at %d %d %dx%d t %p\n", dst.x, dst.y, dst.w, dst.h,
-  // texture);
-
   SDL_RenderCopyEx(sdlRenderer->sdlRenderer, texture, NULL, &dst,
-                   -target->angle(), NULL, SDL_FLIP_NONE);
+                   -radiansToDegrees(target->body->GetAngle()), NULL,
+                   SDL_FLIP_NONE);
 }
 
 void TileTarget::render(Renderer *sdlRenderer) {
   std::pair<int, int> upperLeft =
-      sdlRenderer->sceneToScreen(target->position() - dim);
+      sdlRenderer->sceneToScreen(target->body->GetPosition() - dim);
 
   SDL_Rect dst;
   dst.w = round(sdlRenderer->metersToPixels * tileDim.x * 2);
@@ -38,7 +41,8 @@ void TileTarget::render(Renderer *sdlRenderer) {
     dst.y = std::get<1>(upperLeft) + 0 * dst.h;
 
     SDL_RenderCopyEx(sdlRenderer->sdlRenderer, tiledWith, NULL, &dst,
-                     -target->angle(), NULL, SDL_FLIP_NONE);
+                     -radiansToDegrees(target->body->GetAngle()), NULL,
+                     SDL_FLIP_NONE);
   }
 }
 
@@ -48,9 +52,22 @@ Renderer::Renderer(SDL_Renderer *sdlRenderer) : sdlRenderer(sdlRenderer) {
 
 SDL_Texture *Renderer::getTexture(std::string name) {
   std::string path = "res/images/" + name;
-  SDL_Texture *texture = IMG_LoadTexture(sdlRenderer, path.c_str());
-  textures.insert(std::make_pair(name, texture));
-  return texture;
+
+  auto texture_it = textures.find(name);
+
+  if (texture_it == textures.end()) {
+    SDL_Texture *texture = IMG_LoadTexture(sdlRenderer, path.c_str());
+
+    if (texture==nullptr) {
+      std::cout << "fatal error failed to load texture " << path << std::endl;
+      exit(1);
+    }
+
+    textures.insert(std::make_pair(name, texture));
+    return texture;
+  } else {
+    return texture_it->second;
+  }
 }
 
 // only internally-created resources need to be managed
@@ -88,7 +105,7 @@ void Renderer::render() {
   SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
   SDL_RenderClear(sdlRenderer);
 
-  for (auto &target : targets) {
+  for (auto target : targets) {
     target->render(this);
   }
 

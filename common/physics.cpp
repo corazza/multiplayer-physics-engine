@@ -4,28 +4,24 @@
 #include "scene_objects.hpp"
 
 Physics::Physics(int msTimeStep)
-    : gravity(0.0f, 10.0f), world(gravity), timeStep(msTimeStep / 1000.0) {
+    : world(b2Vec2(0, 10)), timeStep(msTimeStep / 1000.0) {
   contactListener.parent = this;
   world.SetContactListener(&contactListener);
 }
 
 void Physics::ContactListener::BeginContact(b2Contact *contact) {
-  Box2DObject *a =
-      (Box2DObject *)contact->GetFixtureA()->GetBody()->GetUserData();
+  Object *a = (Object *)contact->GetFixtureA()->GetBody()->GetUserData();
 
-  Box2DObject *b =
-      (Box2DObject *)contact->GetFixtureB()->GetBody()->GetUserData();
+  Object *b = (Object *)contact->GetFixtureB()->GetBody()->GetUserData();
 
   a->colliding.insert(b);
   b->colliding.insert(a);
 }
 
 void Physics::ContactListener::EndContact(b2Contact *contact) {
-  Box2DObject *a =
-      (Box2DObject *)contact->GetFixtureA()->GetBody()->GetUserData();
+  Object *a = (Object *)contact->GetFixtureA()->GetBody()->GetUserData();
 
-  Box2DObject *b =
-      (Box2DObject *)contact->GetFixtureB()->GetBody()->GetUserData();
+  Object *b = (Object *)contact->GetFixtureB()->GetBody()->GetUserData();
 
   a->colliding.erase(b);
   b->colliding.erase(a);
@@ -44,6 +40,12 @@ b2Body *Physics::addStaticBody(b2BodyDef *bodyDef, b2PolygonShape *shape) {
 }
 
 void Physics::update() {
-  // printf("updating with timeStep=%f\n", timeStep);
+  ++deltaCounter;
   world.Step(timeStep, velocityIterations, positionIterations);
+}
+
+int Physics::deltaCounterSinceLastCall() {
+  int a = deltaCounter;
+  deltaCounter = 0;
+  return a;
 }

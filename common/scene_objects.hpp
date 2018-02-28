@@ -2,26 +2,34 @@
 #define SCENE_OBJECTS
 
 #include <set>
+#include <string>
 
 #include <Box2D/Box2D.h>
 #include <SDL2/SDL.h>
 
-struct Object {
-  int id;
+struct Controller {
+  bool movingLeft = false;
+  bool movingRight = false;
+  bool jumping = false;
+  bool crouching = false;
+  bool stopping = false;
 
-  virtual b2Vec2 position() = 0;
-  virtual double angle() = 0;
+  bool active();
 };
 
-struct Box2DObject : Object {
-  Box2DObject(b2Body *body);
+struct Object {
+  std::string resId;
+  std::string sceneId;
+  int spawnCount = 0;
 
   b2Body *body;
 
-  std::set<Box2DObject *> colliding;
+  std::set<Object *> colliding;
+  Controller *controller = nullptr;
 
-  b2Vec2 position() override;
-  double angle() override;
+  Object(b2Body *body);
+
+  bool resting();
 };
 
 #endif

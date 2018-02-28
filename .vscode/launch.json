@@ -8,8 +8,10 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Client",
-            "args": [],
+            "program": "${workspaceFolder}/build/client/Client",
+            "args": [
+                "thalinon"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

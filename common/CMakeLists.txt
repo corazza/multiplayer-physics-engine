@@ -12,6 +12,7 @@ set(COMMON_SOURCES
     physics.cpp
     scene_objects.cpp
     scene.cpp
+    cache.cpp
 )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

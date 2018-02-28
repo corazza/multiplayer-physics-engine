@@ -1,5 +1,7 @@
+#include <fstream>
 #include <iostream>
 #include <math.h>
+#include <vector>
 
 #include "scene.hpp"
 
@@ -10,98 +12,209 @@ Scene::~Scene() {
   }
 }
 
-Object *Scene::createObject(std::string id, json def, b2Vec2 pos,
-                            double angle) {
+// TODO add to object removal
+void Scene::removeObject(std::string sceneId) {
+  auto objects_it = objects.find(sceneId);
+  Object *toDelete = objects_it->second;
+  physics.world.DestroyBody(toDelete->body);
+  objects.erase(objects_it);
+  delete toDelete;
+}
+
+Object *Scene::createObject(std::string id, json &def) {
+  b2Vec2 pos(def["position"][0], def["position"][1]);
+  float32 angle = def["angle"];
+
+  b2Vec2 imp(0, 0);
+
+  if (def.find("impulse") != def.end()) {
+    imp = b2Vec2(def["impulse"][0], def["impulse"][1]);
+  }
+
   b2BodyDef bodyDef;
   bodyDef.position = pos;
   bodyDef.angle = angle;
 
   b2PolygonShape box;
-  box.SetAsBox(def["dimensions"][0], def["dimensions"][1]);
+  box.SetAsBox(def["box2d"]["dimensions"][0], def["box2d"]["dimensions"][1]);
 
   b2Body *body;
 
-  if (def["type"] == "dynamic") {
+  if (def["box2d"]["type"] == "dynamic") {
     bodyDef.type = b2_dynamicBody;
+    bodyDef.allowSleep = true;
     b2FixtureDef fixtureDef;
     fixtureDef.shape = &box;
-    fixtureDef.density = def["density"];
-    fixtureDef.friction = def["friction"];
+    fixtureDef.density = def["box2d"]["density"];
+    fixtureDef.friction = def["box2d"]["friction"];
     body = physics.addDynamicBody(&bodyDef, &fixtureDef);
-  } else if (def["type"] == "static") {
+  } else if (def["box2d"]["type"] == "static") {
     b2BodyDef groundBodyDef;
     groundBodyDef.position = pos;
     groundBodyDef.angle = angle;
     body = physics.addStaticBody(&groundBodyDef, &box);
   }
 
-  auto object = new Box2DObject(body);
+  body->ApplyLinearImpulse(imp, body->GetWorldCenter(), true);
+
+  auto object = new Object(body);
+  object->resId = def["resId"];
+  object->sceneId = id;
   objects.insert(std::make_pair(id, object));
+
+  if (def.find("controlled") != def.end() && def["controlled"])
+    object->controller = new Controller;
+
+  if (callback)
+    callback(object);
+
   return object;
 }
 
-typedef std::chrono::high_resolution_clock Time;
-typedef std::chrono::milliseconds ms;
-typedef std::chrono::duration<double> dsec;
+void Scene::processControls() {
+  for (auto &objectEntry : objects) {
+    auto object = objectEntry.second;
+
+    if (object->controller == nullptr)
+      continue;
+
+    if (!object->controller->active())
+      continue;
+
+    b2Vec2 velocity = object->body->GetLinearVelocity();
+    b2Vec2 desiredVelocity(0, 0);
+
+    if (object->controller->movingLeft)
+      desiredVelocity.x -= 15;
+    if (object->controller->movingRight)
+      desiredVelocity.x += 15;
+    if (object->controller->jumping)
+      desiredVelocity.y -= 15;
+
+    b2Vec2 impulse = desiredVelocity - velocity;
+    impulse *= object->body->GetMass();
+
+    if (object->colliding.size() > 0)
+      object->body->ApplyLinearImpulse(impulse, object->body->GetWorldCenter(),
+                                       true);
+
+    object->controller->stopping = false;
+  }
+}
+
+json Scene::processEvents(json events) {
+  json nextBatch = json::array();
+
+  for (auto &event : events) {
+    if (event["type"] == "control") {
+      std::string id = event["caller"];
+
+      auto findObject = objects.find(id);
+
+      if (findObject == objects.end() ||
+          findObject->second->controller == nullptr)
+        continue;
+
+      auto object = findObject->second;
+
+      if (event["action"] == "move") {
+        if (event["value"] == "right") {
+          object->controller->movingRight = event["status"] == "start";
+        } else if (event["value"] == "left") {
+          object->controller->movingLeft = event["status"] == "start";
+        }
+
+        object->controller->stopping = event["status"] == "stop";
+      } else if (event["action"] == "jump") {
+        object->controller->jumping = event["status"] == "start";
+      } else if (event["action"] == "spawn") {
+        if (event["status"] == "stop") {
+          b2Vec2 actionPosition(event["position"][0], event["position"][1]);
+          b2Vec2 callerPosition = object->body->GetPosition();
+
+          b2Vec2 dpos = actionPosition - callerPosition;
+          dpos.Normalize();
+          b2Vec2 vel = dpos;
+
+          vel *= 350;
+          dpos *= 5;
+
+          actionPosition = callerPosition + dpos;
+
+          json def = cache->getJSONDocument("res/objects/", "wooden_crate");
+
+          def["angle"] = -atan2(dpos.x, dpos.y);
+          def["position"][0] = actionPosition.x;
+          def["position"][1] = actionPosition.y;
+          def["impulse"][0] = vel.x;
+          def["impulse"][1] = vel.y;
+
+          json spawnEvent;
+          spawnEvent["type"] = "create";
+          spawnEvent["def"] = def;
+          spawnEvent["sceneId"] =
+              id + "_spawn_" + std::to_string(object->spawnCount++);
+
+          nextBatch.push_back(spawnEvent);
+
+          std::cout << "spawn: " << spawnEvent << std::endl;
+        }
+      }
+    } else if (event["type"] == "create") {
+      std::string sceneId = event["sceneId"];
+      if (objects.find(sceneId) == objects.end()) {
+        createObject(sceneId, event["def"]);
+      }
+    }
+  }
+
+  return nextBatch;
+}
+
+void Scene::beginUpdateConflict() { updateLock.lock(); }
+
+void Scene::endUpdateConflict() { updateLock.unlock(); }
 
 void Scene::run() {
   running = true;
 
   while (running) {
-    mutex.lock();
+    updateLock.lock();
+
     auto start = Time::now();
 
-    for (auto objectCs : controls) {
-      Box2DObject *object = (Box2DObject *)objects.find(objectCs.first)->second;
-      json cs = objectCs.second;
-
-      b2Vec2 velocity = object->body->GetLinearVelocity();
-      b2Vec2 desiredVelocity(0, velocity.y);
-
-      if (cs["moveRight"].is_boolean() && cs["moveRight"]) {
-        desiredVelocity.x += 15;
-      }
-
-      if (cs["moveLeft"].is_boolean() && cs["moveLeft"]) {
-        desiredVelocity.x -= 15;
-      }
-
-      if (cs["jump"].is_boolean() && cs["jump"]) {
-        desiredVelocity.y += -5;
-      }
-
-      b2Vec2 impulse = desiredVelocity - velocity;
-      impulse *= object->body->GetMass();
-
-      if (object->colliding.size() > 0)
-        object->body->ApplyLinearImpulse(impulse,
-                                         object->body->GetWorldCenter(), true);
-    }
+    for (json nextBatch = processEvents(events); nextBatch.size() > 0;
+         nextBatch = processEvents(nextBatch))
+      ;
+    events.clear();
+    processControls();
 
     physics.update();
 
-    if (cameraFollow != nullptr)
-      cameraPosition = cameraFollow->position();
+    // TODO fix camera
+    updateCameraPosition();
 
     auto elapsed = Time::now() - start;
-    mutex.unlock();
 
-    // std::cout << "sleeping for "
-    //           << (std::chrono::milliseconds(msTimeStep) - elapsed) <<
-    //           std::endl;
+    updateLock.unlock();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(msTimeStep) -
                                 elapsed);
   }
 }
 
-void Scene::updateControlState(std::string id, json cs) {
-  auto objectCs = controls.find(id);
-  if (objectCs == controls.end()) {
-    controls.insert(std::make_pair(id, cs));
-  } else {
-    objectCs->second = cs;
+void Scene::updateCameraPosition() {
+  if (cameraFollow != nullptr) {
+    cameraPosition = cameraFollow->body->GetPosition();
   }
+}
+
+void Scene::submitEvents(json toSubmit) {
+  beginUpdateConflict();
+  for (auto event : toSubmit) {
+    events.push_back(event);
+  }
+  endUpdateConflict();
 }
 
 void Scene::stickCamera(Object *object) { cameraFollow = object; }

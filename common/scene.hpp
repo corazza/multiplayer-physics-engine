@@ -1,17 +1,20 @@
 #ifndef GAME_SCENE
 #define GAME_SCENE
 
+#include <chrono>
+#include <functional>
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <utility>
-#include <chrono>
-#include <mutex>
 
 #include "nlohmann/json.hpp"
 #include <Box2D/Box2D.h>
 #include <SDL2/SDL.h>
 
+#include "cache.hpp"
+#include "controls.hpp"
 #include "physics.hpp"
 #include "scene_objects.hpp"
 
@@ -19,23 +22,47 @@ using json = nlohmann::json;
 
 const int msTimeStep = 15;
 
+typedef std::chrono::high_resolution_clock Time;
+
 struct Scene {
   std::map<std::string, Object *> objects;
-  std::map<std::string, json> controls;
-  Object *player;
-  std::mutex mutex;
+  std::map<Object *, std::chrono::time_point<Time, std::chrono::nanoseconds>>
+      lastAbility;
+  // std::map<Box2DObject *, json> playerEvents;
+
+  JSONCache *cache;
   bool running = false;
   Physics physics;
   b2Vec2 cameraPosition;
   Object *cameraFollow;
+  std::function<void(Object *)> callback;
 
-  Scene() : physics(msTimeStep), cameraPosition(0, 0) {}
+  Scene(JSONCache *cache)
+      : cache(cache), physics(msTimeStep), cameraPosition(0, 0) {}
   ~Scene();
 
-  Object *createObject(std::string id, json def, b2Vec2 pos, double angle);
+  // TODO JSON scene properties
+  Object *createObject(std::string id, json &def);
+  void removeObject(std::string sceneId);
   void run();
-  void updateControlState(std::string id, json cs);
+  void submitEvents(json events);
   void stickCamera(Object *object);
+  void updateCameraPosition();
+
+  void beginUpdateConflict();
+  void endUpdateConflict();
+
+private:
+  // TODO move createObject and removeObject here, event-based
+
+  std::vector<json> events;
+  std::vector<std::pair<json, std::function<void(Object *)>>> objectCreation;
+  std::vector<std::string> objectRemoval;
+
+  json processEvents(json events);
+  void processControls();
+  void processObjectCreation();
+  std::mutex updateLock;
 };
 
 #endif

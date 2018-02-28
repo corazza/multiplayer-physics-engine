@@ -19,41 +19,6 @@
             "targets": [
               {
                 "artifacts": [
-                  "/home/jan/Code/game/build/server/Server"
-                ],
-                "buildDirectory": "/home/jan/Code/game/build/server",
-                "fileGroups": [
-                  {
-                    "compileFlags": " -std=c++11 -pthread -g  ",
-                    "includePath": [
-                      {
-                        "path": "/home/jan/Code/game/build/server"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/server"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/common"
-                      }
-                    ],
-                    "isGenerated": false,
-                    "language": "CXX",
-                    "sources": [
-                      "server.cpp"
-                    ]
-                  }
-                ],
-                "fullName": "Server",
-                "linkLanguageFlags": "-std=c++11 -pthread -g",
-                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
-                "linkPath": "-L/home/jan/Code/game/common",
-                "linkerLanguage": "CXX",
-                "name": "Server",
-                "sourceDirectory": "/home/jan/Code/game/server",
-                "type": "EXECUTABLE"
-              },
-              {
-                "artifacts": [
                   "/home/jan/Code/game/build/client/Client"
                 ],
                 "buildDirectory": "/home/jan/Code/game/build/client",
@@ -78,7 +43,9 @@
                     "language": "CXX",
                     "sources": [
                       "client.cpp",
-                      "render.cpp"
+                      "render.cpp",
+                      "client_network.cpp",
+                      "main.cpp"
                     ]
                   }
                 ],
@@ -115,7 +82,8 @@
                     "sources": [
                       "physics.cpp",
                       "scene_objects.cpp",
-                      "scene.cpp"
+                      "scene.cpp",
+                      "cache.cpp"
                     ]
                   }
                 ],
@@ -124,13 +92,48 @@
                 "name": "Common",
                 "sourceDirectory": "/home/jan/Code/game/common",
                 "type": "STATIC_LIBRARY"
+              },
+              {
+                "artifacts": [
+                  "/home/jan/Code/game/build/server/Server"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/server",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "server.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "Server",
+                "linkLanguageFlags": "-std=c++11 -pthread -g",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
+                "linkPath": "-L/home/jan/Code/game/common",
+                "linkerLanguage": "CXX",
+                "name": "Server",
+                "sourceDirectory": "/home/jan/Code/game/server",
+                "type": "EXECUTABLE"
               }
             ]
           }
         ]
       }
     ],
-    "cookie": "0.6038912794623912",
+    "cookie": "0.9511418742342734",
     "inReplyTo": "codemodel",
     "type": "reply"
   }
