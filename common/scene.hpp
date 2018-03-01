@@ -4,7 +4,6 @@
 #include <chrono>
 #include <functional>
 #include <map>
-#include <mutex>
 #include <set>
 #include <string>
 #include <utility>
@@ -49,20 +48,16 @@ struct Scene {
   void stickCamera(Object *object);
   void updateCameraPosition();
 
-  void beginUpdateConflict();
-  void endUpdateConflict();
-
 private:
   // TODO move createObject and removeObject here, event-based
 
-  std::vector<json> events;
+  json events = json::array();
   std::vector<std::pair<json, std::function<void(Object *)>>> objectCreation;
   std::vector<std::string> objectRemoval;
 
   json processEvents(json events);
   void processControls();
   void processObjectCreation();
-  std::mutex updateLock;
 };
 
 #endif

@@ -21,17 +21,9 @@ using json = nlohmann::json;
 
 struct ServerSceneManager {
   Scene scene;
-  std::vector<json> eventsBuffer;
+  json events = json::array();
+  json delta;
   std::thread updateThread;
-  typedef std::set<connection_hdl, std::owner_less<connection_hdl>> con_list;
-
-  con_list m_connections;
-  con_list toSendEntireScene;
-
-  std::map<connection_hdl, std::string, std::owner_less<connection_hdl>>
-      hdlToId;
-
-  std::map<std::string, connection_hdl> idToHdl;
 
   ServerSceneManager(JSONCache *cache, std::string name) : scene(cache) {
     auto const &mapDefinition = cache->getJSONDocument("res/maps/", name);
@@ -130,13 +122,25 @@ struct ServerSceneManager {
   }
 };
 
+struct PlayerSession {
+  connection_hdl hdl;
+  std::string id;
+  std::string status;
+  ServerSceneManager *sceneManager;
+};
+
 struct GameServer {
   std::vector<ServerSceneManager *> sceneManagers;
+  std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
+      playerSessions;
+  std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
+      toInitialize;
+
   std::thread pushThread;
   bool pushingwholeSceneJson = false;
   JSONCache cache;
 
-  GameServer() {
+  GameServer(int port) {
     m_server.init_asio();
 
     m_server.set_open_handler(bind(&GameServer::on_open, this, ::_1));
@@ -145,6 +149,14 @@ struct GameServer {
         bind(&GameServer::on_message, this, ::_1, ::_2));
 
     m_server.set_reuse_addr(true);
+
+    sceneManagers.push_back(new ServerSceneManager(&cache, "first"));
+
+    pushThread = std::thread(&GameServer::pushToClients, this);
+
+    m_server.listen(port);
+    m_server.start_accept();
+    m_server.run();
   }
 
   ~GameServer() {
@@ -152,56 +164,60 @@ struct GameServer {
          it != sceneManagers.end(); ++it) {
       delete *it;
     }
-  }
 
-  std::string getPlayerIdByHdl(connection_hdl hdl) {
-    auto it = sceneManagers[0]->hdlToId.find(hdl);
-
-    if (it == sceneManagers[0]->hdlToId.end())
-      throw std::invalid_argument("invalid player connection");
-
-    return it->second;
-  }
-
-  connection_hdl getHdlByPlayerId(std::string id) {
-    auto it = sceneManagers[0]->idToHdl.find(id);
-
-    if (it == sceneManagers[0]->idToHdl.end())
-      throw std::invalid_argument("invalid player id: " + id);
-
-    return it->second;
+    pushingwholeSceneJson = false;
+    pushThread.join();
+    m_server.stop_listening();
   }
 
   void on_open(connection_hdl hdl) {
-    sceneManagers[0]->m_connections.insert(hdl);
+    auto session = new PlayerSession;
+    session->hdl = hdl;
+    session->status = "not logged in";
+    playerSessions.insert(std::make_pair(hdl, session));
   }
 
   void on_close(connection_hdl hdl) {
-    std::string playerId = getPlayerIdByHdl(hdl);
+    auto session_it = playerSessions.find(hdl);
 
-    std::cout << "player with id " << playerId << " logged out!" << std::endl;
+    if (session_it == playerSessions.end()) {
+      // TODO close connection
+      return;
+    }
 
-    sceneManagers[0]->scene.removeObject("player_" + playerId);
+    // TODO
+    // sceneManagers[0]->scene.removeObject("player_" + playerId);
 
-    sceneManagers[0]->m_connections.erase(hdl);
-    sceneManagers[0]->hdlToId.erase(hdl);
-    sceneManagers[0]->idToHdl.erase(playerId);
+    playerSessions.erase(hdl);
+    toInitialize.erase(hdl);
 
-    // if (sceneManagers[0]->m_connections.size() == 0) {
-    //   quit();
-    // }
+    json removeEvent =
+        json::parse("{\"type\": \"remove\", \"sceneId\": \"player_" +
+                    session_it->second->id + "\" }");
+
+    session_it->second->sceneManager->events.push_back(removeEvent);
+    session_it->second->sceneManager->scene.submitEvents(
+        json::array({removeEvent}));
   }
 
   void on_message(connection_hdl hdl, server::message_ptr msg) {
     auto j = json::parse(msg->get_payload());
 
+    auto session_it = playerSessions.find(hdl);
+
+    if (session_it == playerSessions.end()) {
+      // TODO close connection
+      return;
+    }
+
+    auto &session = *session_it->second;
+
+    // TODO correct SM
     if (j["command"] == "login") {
-      std::string name = j["id"]; // TODO consistent id/name
-      sceneManagers[0]->hdlToId.insert(std::make_pair(hdl, name));
-      sceneManagers[0]->idToHdl.insert(std::make_pair(name, hdl));
+      session.id = j["id"];
 
       auto const &playerDefinition =
-          cache.getJSONDocument("serverdata/players/", "id_" + name);
+          cache.getJSONDocument("serverdata/players/", "id_" + session.id);
       auto const &playerBodyDefinition =
           cache.getJSONDocument("res/objects/", playerDefinition["body"]);
 
@@ -214,114 +230,100 @@ struct GameServer {
       // TODO functions for common events
       json creationEvent;
       creationEvent["type"] = "create";
-      creationEvent["sceneId"] = "player_" + name;
+      creationEvent["sceneId"] = "player_" + session.id;
       creationEvent["def"] = playerDef;
 
       sceneManagers[0]->scene.submitEvents(json::array({creationEvent}));
+      session.status = "not initialized";
+      session.sceneManager = sceneManagers[0];
 
-      sceneManagers[0]->toSendEntireScene.insert(hdl);
+      toInitialize.insert(std::make_pair(hdl, &session));
     } else if (j["command"] == "events") {
-      std::string playerId = getPlayerIdByHdl(hdl);
-
       sceneManagers[0]->scene.submitEvents(j["events"]);
 
       for (auto event : j["events"]) {
-        sceneManagers[0]->eventsBuffer.push_back(event);
+        sceneManagers[0]->events.push_back(event);
+      }
+    } else if (j["command"] == "initialized") {
+      session.status = "initialized";
+    }
+  }
+
+  void pushInitial() {
+    auto session_it = toInitialize.begin();
+
+    while (session_it != toInitialize.end()) {
+      auto &session = *session_it->second;
+
+      // TODO implement hasObject
+      if (session.sceneManager->scene.objects.find("player_" + session.id) !=
+          session.sceneManager->scene.objects.end()) {
+
+        json sceneInit = session.sceneManager->wholeScene();
+        sceneInit["command"] = "init scene";
+        m_server.send(session.hdl, sceneInit.dump(),
+                      websocketpp::frame::opcode::text);
+
+        session_it = toInitialize.erase(session_it);
+      } else {
+        ++session_it;
       }
     }
   }
 
-  void run(uint16_t port) {
-    sceneManagers.push_back(new ServerSceneManager(&cache, "first"));
+  void calculateDeltas() {
+    for (auto sceneManager_pt : sceneManagers) {
+      auto &sceneManager = *sceneManager_pt;
 
-    pushThread = std::thread(&GameServer::pushToClients, this);
+      // TODO callbacks to automatically add and remove SM's from active list
 
-    m_server.listen(port);
-    m_server.start_accept();
-    m_server.run();
-  }
-
-  void quit() {
-    pushingwholeSceneJson = false;
-    pushThread.join();
-    m_server.stop_listening();
-  }
-
-  void pushInitial() {
-    for (auto sceneManager : sceneManagers) {
-      if (!sceneManager->scene.running)
+      if (!sceneManager.scene.running)
         continue;
 
-      json sceneInit = sceneManager->wholeScene();
-      sceneInit["command"] = "init scene";
+      sceneManager.delta = sceneManager.sceneDelta();
+    }
+  }
 
-      auto hdl_it = sceneManager->toSendEntireScene.begin();
+  void clearEventBuffers() {
+    for (auto sceneManager_pt : sceneManagers) {
+      auto &sceneManager = *sceneManager_pt;
 
-      while (hdl_it != sceneManager->toSendEntireScene.end()) {
-        auto hdl = *hdl_it;
-        std::string playerId = getPlayerIdByHdl(hdl);
-        // TODO implement hasObject
-        if (sceneManager->scene.objects.find("player_" + playerId) !=
-            sceneManager->scene.objects.end()) {
-          m_server.send(hdl, sceneInit.dump(),
-                        websocketpp::frame::opcode::text);
-          hdl_it = sceneManager->toSendEntireScene.erase(hdl_it);
-        } else {
-          ++hdl_it;
-        }
-      }
+      sceneManager.events = json::array();
     }
   }
 
   // TODO combine into makeUpdate w/ lambda
   void pushDeltas() {
-    for (std::vector<ServerSceneManager *>::iterator it = sceneManagers.begin();
-         it != sceneManagers.end(); ++it) {
-
-      ServerSceneManager *sceneManager = *it;
-
-      if (!sceneManager->scene.running)
+    for (auto sessionEntry : playerSessions) {
+      if (sessionEntry.second->status != "initialized")
         continue;
 
-      json sceneUpdate = sceneManager->sceneDelta();
+      json sceneUpdate = sessionEntry.second->sceneManager->delta;
 
       if (sceneUpdate["objects"].size() == 0)
         continue;
 
       sceneUpdate["command"] = "update";
 
-      for (auto it : sceneManager->m_connections) {
-        m_server.send(it, sceneUpdate.dump(), websocketpp::frame::opcode::text);
-      }
+      m_server.send(sessionEntry.first, sceneUpdate.dump(),
+                    websocketpp::frame::opcode::text);
     }
   }
 
   void pushEvents() {
-    for (std::vector<ServerSceneManager *>::iterator it = sceneManagers.begin();
-         it != sceneManagers.end(); ++it) {
-
-      ServerSceneManager *sceneManager = *it;
-
-      if (!sceneManager->scene.running)
+    for (auto sessionEntry : playerSessions) {
+      if (sessionEntry.second->status != "initialized")
         continue;
-
-      if (sceneManager->eventsBuffer.empty())
+      if (sessionEntry.second->sceneManager->events.size() == 0)
         continue;
 
       json eventsCommand;
 
       eventsCommand["command"] = "events";
-      eventsCommand["events"] = sceneManager->eventsBuffer;
+      eventsCommand["events"] = sessionEntry.second->sceneManager->events;
 
-      sceneManager->eventsBuffer.clear();
-
-      std::cout << "sending event update command: " << eventsCommand
-                << std::endl;
-
-      for (auto it : sceneManager->m_connections) {
-        m_server.send(it, eventsCommand.dump(),
-                      websocketpp::frame::opcode::text);
-      }
+      m_server.send(sessionEntry.first, eventsCommand.dump(),
+                    websocketpp::frame::opcode::text);
     }
   }
 
@@ -332,12 +334,14 @@ struct GameServer {
     while (pushingwholeSceneJson) {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-      if (counter % 10 == 0) {
-        pushDeltas();
-        pushInitial();
-      }
+      pushInitial();
+      // pushEvents();
+      // clearEventBuffers();
 
-      pushEvents();
+      if (counter % 10 == 0) {
+        // calculateDeltas();
+        // pushDeltas();
+      }
 
       ++counter;
     }
@@ -348,8 +352,6 @@ private:
 };
 
 int main() {
-  GameServer server;
-  server.run(9003);
-
+  GameServer server(9003);
   std::cout << "clean server exit" << std::endl;
 }

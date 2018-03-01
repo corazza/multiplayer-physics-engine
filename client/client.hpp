@@ -4,7 +4,7 @@
 #include "nlohmann/json.hpp"
 #include <Box2D/Box2D.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+//#include <SDL2/SDL_image.h>
 
 #include "scene.hpp"
 #include "scene_objects.hpp"
@@ -23,10 +23,11 @@ struct GameClient {
   GameClient(std::string playerId, Renderer *renderer)
       : playerId(playerId), renderer(renderer) {}
 
+  json creationEvent(json &object);
   void initScene(json &from);
+  void updateScene(json &from);
   void endScene();
   void createRenderTarget(Object *object);
-  void updateFromJSON(json &j);
 };
 
 #endif

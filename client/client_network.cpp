@@ -38,17 +38,11 @@ void ClientNetwork::on_open(connection_hdl hdl) {
                             "Connected to server");
 
   json loginCommand;
-
   loginCommand["command"] = "login";
   loginCommand["id"] = gameClient->playerId;
 
   handle = hdl;
-
-  std::cout << "about to log in!" << std::endl;
-
   endpoint.send(hdl, loginCommand.dump(), websocketpp::frame::opcode::text);
-
-  std::cout << "sent login command!" << std::endl;
 }
 
 void ClientNetwork::on_fail(connection_hdl hdl) {
@@ -63,20 +57,20 @@ void ClientNetwork::on_message(connection_hdl hdl, message_ptr msg) {
   auto j = json::parse(msg->get_payload());
 
   if (j["command"] == "init scene") {
-    std::cout << "initializing scene!" << std::endl;
     gameClient->initScene(j);
+    endpoint.send(hdl, "{ \"command\": \"initialized\" }"_json.dump(),
+                  websocketpp::frame::opcode::text);
   } else if (j["command"] == "end scene") {
-    std::cout << "ending scene" << std::endl;
     gameClient->endScene();
   } else if (j["command"] == "update") {
-    gameClient->updateFromJSON(j);
+    if (gameClient->scene->running)
+      gameClient->updateScene(j);
   } else if (j["command"] == "events") {
     json filteredEvents = json::array();
 
     for (auto &event : j["events"]) {
       if (event["caller"] != "player_" + gameClient->playerId) {
         filteredEvents.push_back(event);
-        std::cout << "accepting event: " << event << std::endl;
       }
     }
 

@@ -19,21 +19,18 @@
             "targets": [
               {
                 "artifacts": [
-                  "/home/jan/Code/game/build/client/Client"
+                  "/home/jan/Code/game/build/server/Server"
                 ],
-                "buildDirectory": "/home/jan/Code/game/build/client",
+                "buildDirectory": "/home/jan/Code/game/build/server",
                 "fileGroups": [
                   {
                     "compileFlags": " -std=c++11 -pthread -g  ",
                     "includePath": [
                       {
-                        "path": "/home/jan/Code/game/build/client"
+                        "path": "/home/jan/Code/game/build/server"
                       },
                       {
-                        "path": "/home/jan/Code/game/client"
-                      },
-                      {
-                        "path": "/usr/include/SDL2"
+                        "path": "/home/jan/Code/game/server"
                       },
                       {
                         "path": "/home/jan/Code/game/common"
@@ -42,20 +39,17 @@
                     "isGenerated": false,
                     "language": "CXX",
                     "sources": [
-                      "client.cpp",
-                      "render.cpp",
-                      "client_network.cpp",
-                      "main.cpp"
+                      "server.cpp"
                     ]
                   }
                 ],
-                "fullName": "Client",
+                "fullName": "Server",
                 "linkLanguageFlags": "-std=c++11 -pthread -g",
-                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libSDL2_image.so -L/usr/lib  -lSDL2 /usr/lib/libboost_system.so",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
                 "linkPath": "-L/home/jan/Code/game/common",
                 "linkerLanguage": "CXX",
-                "name": "Client",
-                "sourceDirectory": "/home/jan/Code/game/client",
+                "name": "Server",
+                "sourceDirectory": "/home/jan/Code/game/server",
                 "type": "EXECUTABLE"
               },
               {
@@ -95,18 +89,21 @@
               },
               {
                 "artifacts": [
-                  "/home/jan/Code/game/build/server/Server"
+                  "/home/jan/Code/game/build/client/Client"
                 ],
-                "buildDirectory": "/home/jan/Code/game/build/server",
+                "buildDirectory": "/home/jan/Code/game/build/client",
                 "fileGroups": [
                   {
                     "compileFlags": " -std=c++11 -pthread -g  ",
                     "includePath": [
                       {
-                        "path": "/home/jan/Code/game/build/server"
+                        "path": "/home/jan/Code/game/build/client"
                       },
                       {
-                        "path": "/home/jan/Code/game/server"
+                        "path": "/home/jan/Code/game/client"
+                      },
+                      {
+                        "path": "/usr/include/SDL2"
                       },
                       {
                         "path": "/home/jan/Code/game/common"
@@ -115,17 +112,20 @@
                     "isGenerated": false,
                     "language": "CXX",
                     "sources": [
-                      "server.cpp"
+                      "client.cpp",
+                      "render.cpp",
+                      "client_network.cpp",
+                      "main.cpp"
                     ]
                   }
                 ],
-                "fullName": "Server",
+                "fullName": "Client",
                 "linkLanguageFlags": "-std=c++11 -pthread -g",
-                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libSDL2_image.so -L/usr/lib  -lSDL2 /usr/lib/libboost_system.so",
                 "linkPath": "-L/home/jan/Code/game/common",
                 "linkerLanguage": "CXX",
-                "name": "Server",
-                "sourceDirectory": "/home/jan/Code/game/server",
+                "name": "Client",
+                "sourceDirectory": "/home/jan/Code/game/client",
                 "type": "EXECUTABLE"
               }
             ]
@@ -133,7 +133,7 @@
         ]
       }
     ],
-    "cookie": "0.9511418742342734",
+    "cookie": "0.07001720303207426",
     "inReplyTo": "codemodel",
     "type": "reply"
   }

@@ -37,9 +37,9 @@ int main(int argc, char *argv[]) {
   SDL_Renderer *sdlRenderer = SDL_CreateRenderer(window, -1, rendererFlags);
   SDL_RenderSetLogicalSize(sdlRenderer, 1000, 1000);
 
-  //   std::string playerName = argv[1];
+  IMG_Init(IMG_INIT_PNG);
 
-  std::cout << "initialized SDL now initializing game" << std::endl;
+  //   std::string playerName = argv[1];
 
   Renderer renderer(sdlRenderer);
   GameClient gameClient(playerName, &renderer);
@@ -191,14 +191,14 @@ int main(int argc, char *argv[]) {
         clientNetwork.sendEvents(events);
       }
 
-      // gameClient.scene->beginUpdateConflict();
       renderer.render();
-      // gameClient.scene->endUpdateConflict();
     }
   }
 
   gameClient.endScene();
 
   SDL_DestroyWindow(window);
+  SDL_DestroyRenderer(sdlRenderer);
+  IMG_Quit();
   SDL_Quit();
 }

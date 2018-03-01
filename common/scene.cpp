@@ -12,7 +12,6 @@ Scene::~Scene() {
   }
 }
 
-// TODO add to object removal
 void Scene::removeObject(std::string sceneId) {
   auto objects_it = objects.find(sceneId);
   Object *toDelete = objects_it->second;
@@ -156,8 +155,6 @@ json Scene::processEvents(json events) {
               id + "_spawn_" + std::to_string(object->spawnCount++);
 
           nextBatch.push_back(spawnEvent);
-
-          std::cout << "spawn: " << spawnEvent << std::endl;
         }
       }
     } else if (event["type"] == "create") {
@@ -165,28 +162,36 @@ json Scene::processEvents(json events) {
       if (objects.find(sceneId) == objects.end()) {
         createObject(sceneId, event["def"]);
       }
+    } else if (event["type"] == "modify") {
+      std::string id = event["sceneId"];
+
+      auto findObject = objects.find(id);
+
+      b2Vec2 newPosition(event["newPosition"][0], event["newPosition"][1]);
+      b2Vec2 newVelocity(event["newVelocity"][0], event["newVelocity"][1]);
+      float32 newAngle = event["newAngle"];
+      float32 newAngularVelocity = event["newAngularVelocity"];
+
+      findObject->second->body->SetTransform(newPosition, newAngle);
+      findObject->second->body->SetLinearVelocity(newVelocity);
+      findObject->second->body->SetAngularVelocity(newAngularVelocity);
+    } else if (event["type"] == "remove") {
+      std::cout << "removing object with id " << event["sceneId"] << std::endl;
+      removeObject(event["sceneId"]);
     }
   }
 
   return nextBatch;
 }
 
-void Scene::beginUpdateConflict() { updateLock.lock(); }
-
-void Scene::endUpdateConflict() { updateLock.unlock(); }
-
 void Scene::run() {
   running = true;
 
   while (running) {
-    updateLock.lock();
-
     auto start = Time::now();
 
-    for (json nextBatch = processEvents(events); nextBatch.size() > 0;
-         nextBatch = processEvents(nextBatch))
-      ;
-    events.clear();
+    events = processEvents(events);
+
     processControls();
 
     physics.update();
@@ -195,8 +200,6 @@ void Scene::run() {
     updateCameraPosition();
 
     auto elapsed = Time::now() - start;
-
-    updateLock.unlock();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(msTimeStep) -
                                 elapsed);
@@ -210,11 +213,9 @@ void Scene::updateCameraPosition() {
 }
 
 void Scene::submitEvents(json toSubmit) {
-  beginUpdateConflict();
   for (auto event : toSubmit) {
     events.push_back(event);
   }
-  endUpdateConflict();
 }
 
 void Scene::stickCamera(Object *object) { cameraFollow = object; }

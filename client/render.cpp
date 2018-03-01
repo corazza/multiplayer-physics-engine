@@ -50,18 +50,28 @@ Renderer::Renderer(SDL_Renderer *sdlRenderer) : sdlRenderer(sdlRenderer) {
   SDL_RenderGetLogicalSize(sdlRenderer, &screenWidth, &screenHeight);
 }
 
+Renderer::~Renderer() {
+  removeAll();
+
+  for (auto texture : textures) {
+    SDL_DestroyTexture(texture.second);
+  }
+}
+
 SDL_Texture *Renderer::getTexture(std::string name) {
   std::string path = "res/images/" + name;
 
   auto texture_it = textures.find(name);
 
   if (texture_it == textures.end()) {
-    SDL_Texture *texture = IMG_LoadTexture(sdlRenderer, path.c_str());
+    // SDL_Surface *loadedSurface = IMG_Load(path.c_str());
 
-    if (texture==nullptr) {
-      std::cout << "fatal error failed to load texture " << path << std::endl;
-      exit(1);
-    }
+    // SDL_Texture *texture =
+    //     SDL_CreateTextureFromSurface(sdlRenderer, loadedSurface);
+
+    // SDL_FreeSurface(loadedSurface);
+
+    SDL_Texture *texture = IMG_LoadTexture(sdlRenderer, path.c_str());
 
     textures.insert(std::make_pair(name, texture));
     return texture;
@@ -69,14 +79,6 @@ SDL_Texture *Renderer::getTexture(std::string name) {
     return texture_it->second;
   }
 }
-
-// only internally-created resources need to be managed
-// Renderer::~Renderer() {
-//   for (std::vector<RenderTarget *>::iterator i = targets.begin();
-//        i != targets.end(); ++i) {
-//     delete *i;
-//   }
-// }
 
 b2Vec2 Renderer::screenToScene(int x, int y) {
   return b2Vec2(cameraPosition->x + (x - screenWidth / 2) / metersToPixels,
@@ -90,7 +92,7 @@ std::pair<int, int> Renderer::sceneToScreen(b2Vec2 pos) {
                              screenHeight / 2 + round(pos.y));
 }
 
-void Renderer::add(RenderTarget *target) { targets.push_back(target); }
+void Renderer::add(RenderTarget *target) { newTargets.push_back(target); }
 
 void Renderer::removeAll() {
   for (std::vector<RenderTarget *>::iterator i = targets.begin();
@@ -108,6 +110,12 @@ void Renderer::render() {
   for (auto target : targets) {
     target->render(this);
   }
+
+  for (auto newTarget : newTargets) {
+    targets.push_back(newTarget);
+  }
+
+  newTargets.clear();
 
   SDL_RenderPresent(sdlRenderer);
 }

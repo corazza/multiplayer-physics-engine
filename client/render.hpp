@@ -42,11 +42,12 @@ struct Renderer {
   SDL_Renderer *sdlRenderer;
   std::map<std::string, SDL_Texture *> textures;
   std::vector<RenderTarget *> targets;
+  std::vector<RenderTarget *> newTargets;
   b2Vec2 *cameraPosition;
   double metersToPixels = 17;
 
   Renderer(SDL_Renderer *renderer);
-  // ~Renderer();
+  ~Renderer();
 
   SDL_Texture *getTexture(std::string resId);
 

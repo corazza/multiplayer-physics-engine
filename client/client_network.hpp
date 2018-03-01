@@ -4,7 +4,7 @@
 #include "nlohmann/json.hpp"
 #include <Box2D/Box2D.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+//#include <SDL2/SDL_image.h>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
