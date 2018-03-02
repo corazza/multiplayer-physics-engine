@@ -17,6 +17,11 @@ void Scene::removeObject(std::string sceneId) {
   Object *toDelete = objects_it->second;
   physics.world.DestroyBody(toDelete->body);
   objects.erase(objects_it);
+
+  if (removedCallback) {
+    removedCallback(toDelete);
+  }
+
   delete toDelete;
 }
 
@@ -152,7 +157,7 @@ json Scene::processEvents(json events) {
           spawnEvent["type"] = "create";
           spawnEvent["def"] = def;
           spawnEvent["sceneId"] =
-              id + "_spawn_" + std::to_string(object->spawnCount++);
+              "spawn_" + id + "_" + std::to_string(spawnCounter++);
 
           nextBatch.push_back(spawnEvent);
         }
@@ -176,7 +181,6 @@ json Scene::processEvents(json events) {
       findObject->second->body->SetLinearVelocity(newVelocity);
       findObject->second->body->SetAngularVelocity(newAngularVelocity);
     } else if (event["type"] == "remove") {
-      std::cout << "removing object with id " << event["sceneId"] << std::endl;
       removeObject(event["sceneId"]);
     }
   }

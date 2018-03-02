@@ -13,9 +13,11 @@ json GameClient::creationEvent(json &object) {
 }
 
 void GameClient::initScene(json &from) {
-  std::cout << "initializing scene" << std::endl;
   scene = new Scene(&cache);
+  scene->spawnCounter = from["spawn count"];
+
   scene->callback = [=](Object *created) { createRenderTarget(created); };
+  scene->removedCallback = [=](Object *removed) { renderer->remove(removed); };
 
   json creationEvents = json::array();
   for (auto &object : from["objects"]) {

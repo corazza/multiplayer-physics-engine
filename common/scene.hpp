@@ -35,6 +35,8 @@ struct Scene {
   b2Vec2 cameraPosition;
   Object *cameraFollow;
   std::function<void(Object *)> callback;
+  std::function<void(Object *)> removedCallback;
+  int spawnCounter = 0;
 
   Scene(JSONCache *cache)
       : cache(cache), physics(msTimeStep), cameraPosition(0, 0) {}

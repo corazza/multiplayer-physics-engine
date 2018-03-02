@@ -28,6 +28,7 @@ struct GameClient {
   void updateScene(json &from);
   void endScene();
   void createRenderTarget(Object *object);
+  void removeRenderTarget(Object *object);
 };
 
 #endif

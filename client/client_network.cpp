@@ -58,8 +58,11 @@ void ClientNetwork::on_message(connection_hdl hdl, message_ptr msg) {
 
   if (j["command"] == "init scene") {
     gameClient->initScene(j);
-    endpoint.send(hdl, "{ \"command\": \"initialized\" }"_json.dump(),
+    endpoint.send(hdl,
+                  "{ \"command\": \"initialized\" }"_json.dump(), // TODO better
                   websocketpp::frame::opcode::text);
+    endpoint.get_alog().write(websocketpp::log::alevel::app,
+                              "Sent initialized command");
   } else if (j["command"] == "end scene") {
     gameClient->endScene();
   } else if (j["command"] == "update") {

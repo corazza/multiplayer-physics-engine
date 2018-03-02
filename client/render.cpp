@@ -1,6 +1,8 @@
 #include <iostream>
 #include <utility>
 
+#include <unistd.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
@@ -64,13 +66,6 @@ SDL_Texture *Renderer::getTexture(std::string name) {
   auto texture_it = textures.find(name);
 
   if (texture_it == textures.end()) {
-    // SDL_Surface *loadedSurface = IMG_Load(path.c_str());
-
-    // SDL_Texture *texture =
-    //     SDL_CreateTextureFromSurface(sdlRenderer, loadedSurface);
-
-    // SDL_FreeSurface(loadedSurface);
-
     SDL_Texture *texture = IMG_LoadTexture(sdlRenderer, path.c_str());
 
     textures.insert(std::make_pair(name, texture));
@@ -94,10 +89,13 @@ std::pair<int, int> Renderer::sceneToScreen(b2Vec2 pos) {
 
 void Renderer::add(RenderTarget *target) { newTargets.push_back(target); }
 
+void Renderer::remove(Object *object) {
+  targets.erase(object);
+}
+
 void Renderer::removeAll() {
-  for (std::vector<RenderTarget *>::iterator i = targets.begin();
-       i != targets.end(); ++i) {
-    delete *i;
+  for (auto target : targets) {
+    delete target.second;
   }
 
   targets.clear();
@@ -108,14 +106,15 @@ void Renderer::render() {
   SDL_RenderClear(sdlRenderer);
 
   for (auto target : targets) {
-    target->render(this);
+    target.second->render(this);
   }
 
   for (auto newTarget : newTargets) {
-    targets.push_back(newTarget);
+    targets.insert(std::make_pair(newTarget->target, newTarget));
   }
 
   newTargets.clear();
 
   SDL_RenderPresent(sdlRenderer);
+  usleep(20000);
 }

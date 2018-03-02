@@ -83,6 +83,7 @@ struct ServerSceneManager {
     json wholeSceneJson;
 
     wholeSceneJson["objects"] = json::array();
+    wholeSceneJson["spawn count"] = scene.spawnCounter;
 
     for (auto object : scene.objects) {
       json objectJSON = {{"position", {0, 0}},
@@ -133,8 +134,7 @@ struct GameServer {
   std::vector<ServerSceneManager *> sceneManagers;
   std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
       playerSessions;
-  std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
-      toInitialize;
+  std::map<std::string, PlayerSession *> playerSessionsByName;
 
   std::thread pushThread;
   bool pushingwholeSceneJson = false;
@@ -151,6 +151,14 @@ struct GameServer {
     m_server.set_reuse_addr(true);
 
     sceneManagers.push_back(new ServerSceneManager(&cache, "first"));
+    sceneManagers[0]->scene.callback = [=](Object *object) {
+      std::string a = "player_";
+      if (object->sceneId.compare(0, a.length(), a) == 0) {
+        std::string id =
+            object->sceneId.substr(a.length(), object->sceneId.length());
+        playerCreated(id);
+      }
+    };
 
     pushThread = std::thread(&GameServer::pushToClients, this);
 
@@ -185,11 +193,8 @@ struct GameServer {
       return;
     }
 
-    // TODO
-    // sceneManagers[0]->scene.removeObject("player_" + playerId);
-
     playerSessions.erase(hdl);
-    toInitialize.erase(hdl);
+    playerSessionsByName.erase(session_it->second->id);
 
     json removeEvent =
         json::parse("{\"type\": \"remove\", \"sceneId\": \"player_" +
@@ -237,7 +242,7 @@ struct GameServer {
       session.status = "not initialized";
       session.sceneManager = sceneManagers[0];
 
-      toInitialize.insert(std::make_pair(hdl, &session));
+      playerSessionsByName.insert(std::make_pair(session.id, &session));
     } else if (j["command"] == "events") {
       sceneManagers[0]->scene.submitEvents(j["events"]);
 
@@ -249,26 +254,13 @@ struct GameServer {
     }
   }
 
-  void pushInitial() {
-    auto session_it = toInitialize.begin();
+  void playerCreated(std::string id) {
+    auto &session = *playerSessionsByName.find(id)->second;
 
-    while (session_it != toInitialize.end()) {
-      auto &session = *session_it->second;
-
-      // TODO implement hasObject
-      if (session.sceneManager->scene.objects.find("player_" + session.id) !=
-          session.sceneManager->scene.objects.end()) {
-
-        json sceneInit = session.sceneManager->wholeScene();
-        sceneInit["command"] = "init scene";
-        m_server.send(session.hdl, sceneInit.dump(),
-                      websocketpp::frame::opcode::text);
-
-        session_it = toInitialize.erase(session_it);
-      } else {
-        ++session_it;
-      }
-    }
+    json sceneInit = session.sceneManager->wholeScene();
+    sceneInit["command"] = "init scene";
+    m_server.send(session.hdl, sceneInit.dump(),
+                  websocketpp::frame::opcode::text);
   }
 
   void calculateDeltas() {
@@ -334,13 +326,12 @@ struct GameServer {
     while (pushingwholeSceneJson) {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-      pushInitial();
-      // pushEvents();
-      // clearEventBuffers();
+      pushEvents();
+      clearEventBuffers();
 
       if (counter % 10 == 0) {
-        // calculateDeltas();
-        // pushDeltas();
+        calculateDeltas();
+        pushDeltas();
       }
 
       ++counter;

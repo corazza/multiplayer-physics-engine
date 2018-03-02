@@ -41,7 +41,7 @@ struct Renderer {
   int screenWidth, screenHeight;
   SDL_Renderer *sdlRenderer;
   std::map<std::string, SDL_Texture *> textures;
-  std::vector<RenderTarget *> targets;
+  std::map<Object *, RenderTarget *> targets;
   std::vector<RenderTarget *> newTargets;
   b2Vec2 *cameraPosition;
   double metersToPixels = 17;
@@ -54,7 +54,9 @@ struct Renderer {
   b2Vec2 screenToScene(int x, int y);
   std::pair<int, int> sceneToScreen(b2Vec2 pos);
 
+  // TODO client should not be responsible for creating targets, give object's definition instead
   void add(RenderTarget *target);
+  void remove(Object *object);
   void removeAll();
   void render();
 };
