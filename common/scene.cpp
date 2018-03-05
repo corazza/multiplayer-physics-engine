@@ -66,8 +66,10 @@ Object *Scene::createObject(std::string id, json &def) {
   object->sceneId = id;
   objects.insert(std::make_pair(id, object));
 
-  if (def.find("controlled") != def.end() && def["controlled"])
+  if (def.find("controlled") != def.end() && def["controlled"]) {
     object->controller = new Controller;
+    body->SetFixedRotation(true);
+  }
 
   if (callback)
     callback(object);
@@ -93,7 +95,7 @@ void Scene::processControls() {
     if (object->controller->movingRight)
       desiredVelocity.x += 15;
     if (object->controller->jumping)
-      desiredVelocity.y -= 15;
+      desiredVelocity.y -= 10;
 
     b2Vec2 impulse = desiredVelocity - velocity;
     impulse *= object->body->GetMass();
@@ -223,3 +225,8 @@ void Scene::submitEvents(json toSubmit) {
 }
 
 void Scene::stickCamera(Object *object) { cameraFollow = object; }
+
+bool Scene::isPlayer(Object *object) {
+  std::string a = "player_";
+  return object->sceneId.compare(0, a.length(), a) == 0;
+}

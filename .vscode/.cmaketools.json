@@ -50,47 +50,13 @@
                   }
                 ],
                 "fullName": "Client",
+                "linkFlags": "-static-libgcc -static-libstdc++",
                 "linkLanguageFlags": "-std=c++11 -pthread -g",
-                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libSDL2_image.so -L/usr/lib  -lSDL2 /usr/lib/libboost_system.so",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libSDL2_image.so -L/usr/lib  -lSDL2 /usr/lib/libboost_system.a",
                 "linkPath": "-L/home/jan/Code/game/common",
                 "linkerLanguage": "CXX",
                 "name": "Client",
                 "sourceDirectory": "/home/jan/Code/game/client",
-                "type": "EXECUTABLE"
-              },
-              {
-                "artifacts": [
-                  "/home/jan/Code/game/build/server/Server"
-                ],
-                "buildDirectory": "/home/jan/Code/game/build/server",
-                "fileGroups": [
-                  {
-                    "compileFlags": " -std=c++11 -pthread -g  ",
-                    "includePath": [
-                      {
-                        "path": "/home/jan/Code/game/build/server"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/server"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/common"
-                      }
-                    ],
-                    "isGenerated": false,
-                    "language": "CXX",
-                    "sources": [
-                      "server.cpp"
-                    ]
-                  }
-                ],
-                "fullName": "Server",
-                "linkLanguageFlags": "-std=c++11 -pthread -g",
-                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.so",
-                "linkPath": "-L/home/jan/Code/game/common",
-                "linkerLanguage": "CXX",
-                "name": "Server",
-                "sourceDirectory": "/home/jan/Code/game/server",
                 "type": "EXECUTABLE"
               },
               {
@@ -127,13 +93,51 @@
                 "name": "Common",
                 "sourceDirectory": "/home/jan/Code/game/common",
                 "type": "STATIC_LIBRARY"
+              },
+              {
+                "artifacts": [
+                  "/home/jan/Code/game/build/server/Server"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/server",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/server"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "server.cpp",
+                      "main.cpp",
+                      "scene_management.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "Server",
+                "linkFlags": "-static-libgcc -static-libstdc++",
+                "linkLanguageFlags": "-std=c++11 -pthread -g",
+                "linkLibraries": "-Wl,-rpath,/home/jan/Code/game/common ../common/libCommon.a /usr/lib/libBox2D.so /usr/lib/libboost_system.a",
+                "linkPath": "-L/home/jan/Code/game/common",
+                "linkerLanguage": "CXX",
+                "name": "Server",
+                "sourceDirectory": "/home/jan/Code/game/server",
+                "type": "EXECUTABLE"
               }
             ]
           }
         ]
       }
     ],
-    "cookie": "0.7294736347133324",
+    "cookie": "0.3413847905558425",
     "inReplyTo": "codemodel",
     "type": "reply"
   }

@@ -89,9 +89,7 @@ std::pair<int, int> Renderer::sceneToScreen(b2Vec2 pos) {
 
 void Renderer::add(RenderTarget *target) { newTargets.push_back(target); }
 
-void Renderer::remove(Object *object) {
-  targets.erase(object);
-}
+void Renderer::remove(Object *object) { targets.erase(object); }
 
 void Renderer::removeAll() {
   for (auto target : targets) {
@@ -109,12 +107,14 @@ void Renderer::render() {
     target.second->render(this);
   }
 
-  for (auto newTarget : newTargets) {
+  auto newTargetsCopy = newTargets;
+
+  for (auto newTarget : newTargetsCopy) {
     targets.insert(std::make_pair(newTarget->target, newTarget));
   }
 
   newTargets.clear();
 
   SDL_RenderPresent(sdlRenderer);
-  usleep(20000);
+  usleep(5000);
 }

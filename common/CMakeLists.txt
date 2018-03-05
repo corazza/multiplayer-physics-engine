@@ -1,3 +1,4 @@
+set(BOX2D_STATIC_LIBRARIES TRUE)
 find_package(Box2D REQUIRED)
 find_package(Websocketpp REQUIRED)
 

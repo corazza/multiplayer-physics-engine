@@ -24,13 +24,12 @@ using websocketpp::lib::placeholders::_2;
 
 struct ClientNetwork {
   client endpoint;
-  std::string uri = "ws://localhost:9003";
   client::connection_ptr conn;
   connection_hdl handle;
   std::thread connThread;
   GameClient *gameClient;
 
-  ClientNetwork(GameClient *gameClient);
+  ClientNetwork(GameClient *gameClient, json conf);
   ~ClientNetwork();
 
   void runConnection();

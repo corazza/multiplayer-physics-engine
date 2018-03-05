@@ -1,5 +1,7 @@
+set(BOX2D_STATIC_LIBRARIES TRUE)
 find_package(Box2D REQUIRED)
 find_package(Websocketpp REQUIRED)
+set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)

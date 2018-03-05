@@ -24,14 +24,12 @@ const int msTimeStep = 15;
 typedef std::chrono::high_resolution_clock Time;
 
 struct Scene {
-  std::map<std::string, Object *> objects;
-  std::map<Object *, std::chrono::time_point<Time, std::chrono::nanoseconds>>
-      lastAbility;
-  // std::map<Box2DObject *, json> playerEvents;
-
   JSONCache *cache;
   bool running = false;
   Physics physics;
+
+  std::map<std::string, Object *> objects;
+
   b2Vec2 cameraPosition;
   Object *cameraFollow;
   std::function<void(Object *)> callback;
@@ -49,6 +47,7 @@ struct Scene {
   void submitEvents(json events);
   void stickCamera(Object *object);
   void updateCameraPosition();
+  bool isPlayer(Object *object);
 
 private:
   // TODO move createObject and removeObject here, event-based

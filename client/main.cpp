@@ -21,29 +21,34 @@ int main(int argc, char *argv[]) {
     playerName = argv[1];
   }
 
-SDL_Init(SDL_INIT_VIDEO);
+  SDL_Init(SDL_INIT_VIDEO);
 
-int fullscreenType = 0; // SDL_WINDOW_FULLSCREEN_DESKTOP;
+  int fullscreenType = 0; // SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-int windowFlags = fullscreenType | SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS |
-                  SDL_WINDOW_ALLOW_HIGHDPI;
+  int windowFlags = fullscreenType | SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS |
+                    SDL_WINDOW_ALLOW_HIGHDPI;
 
-int rendererFlags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
+  int rendererFlags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
 
-SDL_Window *window =
-    SDL_CreateWindow("Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                      1000, 1000, windowFlags);
+  SDL_Window *window =
+      SDL_CreateWindow("Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                       1000, 1000, windowFlags);
 
-SDL_Renderer *sdlRenderer = SDL_CreateRenderer(window, -1, rendererFlags);
-SDL_RenderSetLogicalSize(sdlRenderer, 1000, 1000);
+  SDL_Renderer *sdlRenderer = SDL_CreateRenderer(window, -1, rendererFlags);
+  SDL_RenderSetLogicalSize(sdlRenderer, 1000, 1000);
 
-IMG_Init(IMG_INIT_PNG);
+  IMG_Init(IMG_INIT_PNG);
 
   //   std::string playerName = argv[1];
 
+  std::ifstream confStream("clientdata/conf.json");
+  std::stringstream buffer;
+  buffer << confStream.rdbuf();
+  auto conf = json::parse(buffer.str());
+
   Renderer renderer(sdlRenderer);
   GameClient gameClient(playerName, &renderer);
-  ClientNetwork clientNetwork(&gameClient);
+  ClientNetwork clientNetwork(&gameClient, conf);
 
   std::string playerSceneId = "player_" + playerName;
 

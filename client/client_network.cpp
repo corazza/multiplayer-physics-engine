@@ -1,6 +1,7 @@
 #include "client_network.hpp"
 
-ClientNetwork::ClientNetwork(GameClient *gameClient) : gameClient(gameClient) {
+ClientNetwork::ClientNetwork(GameClient *gameClient, json conf)
+    : gameClient(gameClient) {
   endpoint.clear_access_channels(websocketpp::log::alevel::frame_header);
   endpoint.clear_access_channels(websocketpp::log::alevel::frame_payload);
   // endpoint.set_error_channels(websocketpp::log::elevel::none);
@@ -15,6 +16,7 @@ ClientNetwork::ClientNetwork(GameClient *gameClient) : gameClient(gameClient) {
   endpoint.set_close_handler(bind(&ClientNetwork::on_close, this, ::_1));
 
   websocketpp::lib::error_code ec;
+  std::string uri = conf["uri"];
   conn = endpoint.get_connection(uri, ec);
   endpoint.connect(conn);
 
@@ -61,23 +63,13 @@ void ClientNetwork::on_message(connection_hdl hdl, message_ptr msg) {
     endpoint.send(hdl,
                   "{ \"command\": \"initialized\" }"_json.dump(), // TODO better
                   websocketpp::frame::opcode::text);
-    endpoint.get_alog().write(websocketpp::log::alevel::app,
-                              "Sent initialized command");
   } else if (j["command"] == "end scene") {
     gameClient->endScene();
   } else if (j["command"] == "update") {
     if (gameClient->scene->running)
       gameClient->updateScene(j);
   } else if (j["command"] == "events") {
-    json filteredEvents = json::array();
-
-    for (auto &event : j["events"]) {
-      if (event["caller"] != "player_" + gameClient->playerId) {
-        filteredEvents.push_back(event);
-      }
-    }
-
-    gameClient->scene->submitEvents(filteredEvents);
+    gameClient->scene->submitEvents(j["events"]);
   }
 }
 

@@ -6,10 +6,10 @@
 #include <SDL2/SDL.h>
 //#include <SDL2/SDL_image.h>
 
-#include "scene.hpp"
-#include "scene_objects.hpp"
 #include "cache.hpp"
 #include "render.hpp"
+#include "scene.hpp"
+#include "scene_objects.hpp"
 
 using json = nlohmann::json;
 
@@ -29,6 +29,7 @@ struct GameClient {
   void endScene();
   void createRenderTarget(Object *object);
   void removeRenderTarget(Object *object);
+  void clientEvents(json events);
 };
 
 #endif
