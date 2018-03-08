@@ -1,5 +1,7 @@
 {
     "resId": "wooden_crate",
+    "type": "box2d",
+    "flags": [],
     "box2d": {
         "type": "dynamic",
         "dimensions": [

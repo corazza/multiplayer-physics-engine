@@ -68,8 +68,15 @@ void GameClient::createRenderTarget(Object *object) {
   auto const &resourceJSON =
       cache.getJSONDocument("res/objects/", object->resId);
 
-  b2Vec2 dim(resourceJSON["box2d"]["dimensions"][0],
-             resourceJSON["box2d"]["dimensions"][1]);
+  b2Vec2 dim;
+
+  if (resourceJSON["type"] == "box2d") {
+    dim = b2Vec2(resourceJSON["box2d"]["dimensions"][0],
+                 resourceJSON["box2d"]["dimensions"][1]);
+  } else if (resourceJSON["type"] == "background") {
+    dim = b2Vec2(resourceJSON["physical"]["dimensions"][0],
+                 resourceJSON["physical"]["dimensions"][1]);
+  }
 
   if (resourceJSON["render"]["type"] == "rect") {
     auto texture = renderer->getTexture(resourceJSON["render"]["image"]);

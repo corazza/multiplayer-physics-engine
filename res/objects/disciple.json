@@ -1,6 +1,9 @@
 {
     "resId": "disciple",
-    "controlled": true,
+    "type": "box2d",
+    "flags": [
+        "controlled"
+    ],
     "box2d": {
         "type": "dynamic",
         "dimensions": [

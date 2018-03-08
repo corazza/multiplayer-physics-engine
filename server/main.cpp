@@ -1,6 +1,9 @@
 #include "server.hpp"
 
 int main() {
-  GameServer server(9003);
-  std::cout << "clean server exit" << std::endl;
+  std::ifstream confStream("serverdata/conf.json");
+  std::stringstream buffer;
+  buffer << confStream.rdbuf();
+  auto conf = json::parse(buffer.str());
+  GameServer server(conf);
 }

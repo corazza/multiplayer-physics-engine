@@ -40,9 +40,6 @@ struct Scene {
       : cache(cache), physics(msTimeStep), cameraPosition(0, 0) {}
   ~Scene();
 
-  // TODO JSON scene properties
-  Object *createObject(std::string id, json &def);
-  void removeObject(std::string sceneId);
   void run();
   void submitEvents(json events);
   void stickCamera(Object *object);
@@ -55,6 +52,9 @@ private:
   json events = json::array();
   std::vector<std::pair<json, std::function<void(Object *)>>> objectCreation;
   std::vector<std::string> objectRemoval;
+
+  Object *createObject(std::string id, json &def);
+  void removeObject(std::string sceneId);
 
   json processEvents(json events);
   void processControls();

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -15,7 +16,10 @@ Scene::~Scene() {
 void Scene::removeObject(std::string sceneId) {
   auto objects_it = objects.find(sceneId);
   Object *toDelete = objects_it->second;
-  physics.world.DestroyBody(toDelete->body);
+
+  if (toDelete->body != nullptr)
+    physics.world.DestroyBody(toDelete->body);
+
   objects.erase(objects_it);
 
   if (removedCallback) {
@@ -26,50 +30,60 @@ void Scene::removeObject(std::string sceneId) {
 }
 
 Object *Scene::createObject(std::string id, json &def) {
+  auto object = new Object;
+  object->resId = def["resId"];
+  object->sceneId = id;
+
   b2Vec2 pos(def["position"][0], def["position"][1]);
   float32 angle = def["angle"];
 
-  b2Vec2 imp(0, 0);
+  if (def["type"] == "box2d") {
+    b2Vec2 imp(0, 0);
 
-  if (def.find("impulse") != def.end()) {
-    imp = b2Vec2(def["impulse"][0], def["impulse"][1]);
+    if (def["box2d"].find("impulse") != def["box2d"].end()) {
+      imp = b2Vec2(def["box2d"]["impulse"][0], def["box2d"]["impulse"][1]);
+    }
+
+    b2BodyDef bodyDef;
+    bodyDef.position = pos;
+    bodyDef.angle = angle;
+
+    b2PolygonShape box;
+    box.SetAsBox(def["box2d"]["dimensions"][0], def["box2d"]["dimensions"][1]);
+
+    b2Body *body;
+
+    if (def["box2d"]["type"] == "dynamic") {
+      bodyDef.type = b2_dynamicBody;
+      bodyDef.allowSleep = true;
+      b2FixtureDef fixtureDef;
+      fixtureDef.shape = &box;
+      fixtureDef.density = def["box2d"]["density"];
+      fixtureDef.friction = def["box2d"]["friction"];
+      body = physics.addDynamicBody(&bodyDef, &fixtureDef);
+    } else if (def["box2d"]["type"] == "static") {
+      b2BodyDef groundBodyDef;
+      groundBodyDef.position = pos;
+      groundBodyDef.angle = angle;
+      body = physics.addStaticBody(&groundBodyDef, &box);
+    }
+
+    body->ApplyLinearImpulse(imp, body->GetWorldCenter(), true);
+    body->SetUserData(object);
+    object->body = body;
+  } else if (def["type"] == "background") {
+    object->fixedPosition = new FixedPosition;
+    object->fixedPosition->pos = pos;
+    object->fixedPosition->angle = angle;
   }
 
-  b2BodyDef bodyDef;
-  bodyDef.position = pos;
-  bodyDef.angle = angle;
-
-  b2PolygonShape box;
-  box.SetAsBox(def["box2d"]["dimensions"][0], def["box2d"]["dimensions"][1]);
-
-  b2Body *body;
-
-  if (def["box2d"]["type"] == "dynamic") {
-    bodyDef.type = b2_dynamicBody;
-    bodyDef.allowSleep = true;
-    b2FixtureDef fixtureDef;
-    fixtureDef.shape = &box;
-    fixtureDef.density = def["box2d"]["density"];
-    fixtureDef.friction = def["box2d"]["friction"];
-    body = physics.addDynamicBody(&bodyDef, &fixtureDef);
-  } else if (def["box2d"]["type"] == "static") {
-    b2BodyDef groundBodyDef;
-    groundBodyDef.position = pos;
-    groundBodyDef.angle = angle;
-    body = physics.addStaticBody(&groundBodyDef, &box);
-  }
-
-  body->ApplyLinearImpulse(imp, body->GetWorldCenter(), true);
-
-  auto object = new Object(body);
-  object->resId = def["resId"];
-  object->sceneId = id;
-  objects.insert(std::make_pair(id, object));
-
-  if (def.find("controlled") != def.end() && def["controlled"]) {
+  if (std::find(def["flags"].begin(), def["flags"].end(), "controlled") !=
+      def["flags"].end()) {
     object->controller = new Controller;
-    body->SetFixedRotation(true);
+    object->body->SetFixedRotation(true);
   }
+
+  objects.insert(std::make_pair(id, object));
 
   if (callback)
     callback(object);
@@ -136,7 +150,7 @@ json Scene::processEvents(json events) {
       } else if (event["action"] == "spawn") {
         if (event["status"] == "stop") {
           b2Vec2 actionPosition(event["position"][0], event["position"][1]);
-          b2Vec2 callerPosition = object->body->GetPosition();
+          b2Vec2 callerPosition = object->position();
 
           b2Vec2 dpos = actionPosition - callerPosition;
           dpos.Normalize();
@@ -152,8 +166,8 @@ json Scene::processEvents(json events) {
           def["angle"] = -atan2(dpos.x, dpos.y);
           def["position"][0] = actionPosition.x;
           def["position"][1] = actionPosition.y;
-          def["impulse"][0] = vel.x;
-          def["impulse"][1] = vel.y;
+          def["box2d"]["impulse"][0] = vel.x;
+          def["box2d"]["impulse"][1] = vel.y;
 
           json spawnEvent;
           spawnEvent["type"] = "create";
@@ -163,12 +177,13 @@ json Scene::processEvents(json events) {
 
           nextBatch.push_back(spawnEvent);
         }
+      } else if (event["action"] == "use") {
+        std::cout << "use by " << id << std::endl;
       }
     } else if (event["type"] == "create") {
       std::string sceneId = event["sceneId"];
-      if (objects.find(sceneId) == objects.end()) {
+      if (objects.find(sceneId) == objects.end())
         createObject(sceneId, event["def"]);
-      }
     } else if (event["type"] == "modify") {
       std::string id = event["sceneId"];
 
@@ -214,7 +229,7 @@ void Scene::run() {
 
 void Scene::updateCameraPosition() {
   if (cameraFollow != nullptr) {
-    cameraPosition = cameraFollow->body->GetPosition();
+    cameraPosition = cameraFollow->position();
   }
 }
 

@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
   keyPresses["w"] = false;
   keyPresses["d"] = false;
   keyPresses["s"] = false;
+  keyPresses["f"] = false;
 
   while (running) {
     json events = json::array();
@@ -115,8 +116,14 @@ int main(int argc, char *argv[]) {
           }
           break;
 
-        case SDLK_ESCAPE:
-          running = false;
+        case SDLK_f:
+          if (!keyPresses["f"]) {
+            events.push_back({{"caller", playerSceneId},
+                              {"type", "control"},
+                              {"action", "use"},
+                              {"status", "start"}});
+            keyPresses["f"] = true;
+          }
           break;
 
         default:
@@ -160,6 +167,17 @@ int main(int argc, char *argv[]) {
           keyPresses["s"] = false;
           break;
 
+        case SDLK_f:
+          events.push_back({{"caller", playerSceneId},
+                            {"type", "control"},
+                            {"action", "use"},
+                            {"status", "stop"}});
+          keyPresses["f"] = false;
+          break;
+
+        case SDLK_ESCAPE:
+          running = false;
+          break;
         default:
           break;
         }

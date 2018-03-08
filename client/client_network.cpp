@@ -16,7 +16,9 @@ ClientNetwork::ClientNetwork(GameClient *gameClient, json conf)
   endpoint.set_close_handler(bind(&ClientNetwork::on_close, this, ::_1));
 
   websocketpp::lib::error_code ec;
-  std::string uri = conf["uri"];
+  std::string domain = conf["domain"];
+  int port = conf["port"];
+  std::string uri = "ws://" + domain + ":" + std::to_string(port);
   conn = endpoint.get_connection(uri, ec);
   endpoint.connect(conn);
 

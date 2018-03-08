@@ -14,7 +14,7 @@ double radiansToDegrees(float32 radians) {
 
 void RectTarget::render(Renderer *sdlRenderer) {
   std::pair<int, int> position =
-      sdlRenderer->sceneToScreen(target->body->GetPosition());
+      sdlRenderer->sceneToScreen(target->position());
 
   b2Vec2 screenDim = dim;
   screenDim *= sdlRenderer->metersToPixels;
@@ -26,13 +26,13 @@ void RectTarget::render(Renderer *sdlRenderer) {
   dst.h = round(screenDim.y * 2);
 
   SDL_RenderCopyEx(sdlRenderer->sdlRenderer, texture, NULL, &dst,
-                   -radiansToDegrees(target->body->GetAngle()), NULL,
+                   -radiansToDegrees(target->angle()), NULL,
                    SDL_FLIP_NONE);
 }
 
 void TileTarget::render(Renderer *sdlRenderer) {
   std::pair<int, int> upperLeft =
-      sdlRenderer->sceneToScreen(target->body->GetPosition() - dim);
+      sdlRenderer->sceneToScreen(target->position() - dim);
 
   SDL_Rect dst;
   dst.w = round(sdlRenderer->metersToPixels * tileDim.x * 2);
@@ -43,7 +43,7 @@ void TileTarget::render(Renderer *sdlRenderer) {
     dst.y = std::get<1>(upperLeft) + 0 * dst.h;
 
     SDL_RenderCopyEx(sdlRenderer->sdlRenderer, tiledWith, NULL, &dst,
-                     -radiansToDegrees(target->body->GetAngle()), NULL,
+                     -radiansToDegrees(target->angle()), NULL,
                      SDL_FLIP_NONE);
   }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "First map",
+    "name": "Second map",
     "objects": [
         {
             "resId": "marble_ground",
@@ -10,10 +10,10 @@
             "angle": 0
         },
         {
-            "resId": "castle_door",
+            "resId": "marble_ground",
             "position": [
-                10,
-                -5.5
+                0,
+                -25
             ],
             "angle": 0
         },
@@ -32,6 +32,14 @@
                 -10
             ],
             "angle": 0.2
+        },
+        {
+            "resId": "wooden_crate",
+            "position": [
+                -5,
+                -20
+            ],
+            "angle": 0.3
         },
         {
             "resId": "wooden_crate",

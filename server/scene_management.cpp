@@ -29,21 +29,29 @@ ServerSceneManager::~ServerSceneManager() {
 
 void ServerSceneManager::queryObject(Object *object, json &fields) {
   if (fields.find("position") != fields.end()) {
-    b2Vec2 pos = object->body->GetPosition();
+    b2Vec2 pos = object->position();
     fields["position"] = {pos.x, pos.y};
   }
 
   if (fields.find("angle") != fields.end()) {
-    fields["angle"] = object->body->GetAngle();
+    fields["angle"] = object->angle();
   }
 
   if (fields.find("velocity") != fields.end()) {
-    b2Vec2 vel = object->body->GetLinearVelocity();
-    fields["velocity"] = {vel.x, vel.y};
+    if (object->body != nullptr) {
+      b2Vec2 vel = object->body->GetLinearVelocity();
+      fields["velocity"] = {vel.x, vel.y};
+    } else {
+      fields["velocity"] = {0, 0};
+    }
   }
 
   if (fields.find("angularVelocity") != fields.end()) {
-    fields["angularVelocity"] = object->body->GetAngularVelocity();
+    if (object->body != nullptr) {
+      fields["angularVelocity"] = object->body->GetAngularVelocity();
+    } else {
+      fields["angularVelocity"] = 0.0;
+    }
   }
 
   if (fields.find("resting") != fields.end()) {

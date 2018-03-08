@@ -1,3 +1,4 @@
 {
-    "uri": "ws://localhost:9003"
+    "port": 9002,
+    "domain": "localhost"
 }

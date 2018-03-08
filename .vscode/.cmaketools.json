@@ -19,6 +19,41 @@
             "targets": [
               {
                 "artifacts": [
+                  "/home/jan/Code/game/build/common/libCommon.a"
+                ],
+                "buildDirectory": "/home/jan/Code/game/build/common",
+                "fileGroups": [
+                  {
+                    "compileFlags": " -std=c++11 -pthread -g  ",
+                    "includePath": [
+                      {
+                        "path": "/home/jan/Code/game/build/common"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common"
+                      },
+                      {
+                        "path": "/home/jan/Code/game/common/nlohmann"
+                      }
+                    ],
+                    "isGenerated": false,
+                    "language": "CXX",
+                    "sources": [
+                      "physics.cpp",
+                      "scene_objects.cpp",
+                      "scene.cpp",
+                      "cache.cpp"
+                    ]
+                  }
+                ],
+                "fullName": "libCommon.a",
+                "linkerLanguage": "CXX",
+                "name": "Common",
+                "sourceDirectory": "/home/jan/Code/game/common",
+                "type": "STATIC_LIBRARY"
+              },
+              {
+                "artifacts": [
                   "/home/jan/Code/game/build/client/Client"
                 ],
                 "buildDirectory": "/home/jan/Code/game/build/client",
@@ -58,41 +93,6 @@
                 "name": "Client",
                 "sourceDirectory": "/home/jan/Code/game/client",
                 "type": "EXECUTABLE"
-              },
-              {
-                "artifacts": [
-                  "/home/jan/Code/game/build/common/libCommon.a"
-                ],
-                "buildDirectory": "/home/jan/Code/game/build/common",
-                "fileGroups": [
-                  {
-                    "compileFlags": " -std=c++11 -pthread -g  ",
-                    "includePath": [
-                      {
-                        "path": "/home/jan/Code/game/build/common"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/common"
-                      },
-                      {
-                        "path": "/home/jan/Code/game/common/nlohmann"
-                      }
-                    ],
-                    "isGenerated": false,
-                    "language": "CXX",
-                    "sources": [
-                      "physics.cpp",
-                      "scene_objects.cpp",
-                      "scene.cpp",
-                      "cache.cpp"
-                    ]
-                  }
-                ],
-                "fullName": "libCommon.a",
-                "linkerLanguage": "CXX",
-                "name": "Common",
-                "sourceDirectory": "/home/jan/Code/game/common",
-                "type": "STATIC_LIBRARY"
               },
               {
                 "artifacts": [
@@ -137,7 +137,7 @@
         ]
       }
     ],
-    "cookie": "0.3413847905558425",
+    "cookie": "0.47811970652248403",
     "inReplyTo": "codemodel",
     "type": "reply"
   }

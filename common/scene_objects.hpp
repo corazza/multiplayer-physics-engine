@@ -17,18 +17,24 @@ struct Controller {
   bool active();
 };
 
+struct FixedPosition {
+  b2Vec2 pos;
+  float32 angle;
+};
+
 struct Object {
   std::string resId;
   std::string sceneId;
   int spawnCount = 0;
 
   b2Body *body;
+  FixedPosition *fixedPosition;
 
   std::set<Object *> colliding;
   Controller *controller = nullptr;
 
-  Object(b2Body *body);
-
+  b2Vec2 position();
+  float32 angle();
   bool resting();
 };
 

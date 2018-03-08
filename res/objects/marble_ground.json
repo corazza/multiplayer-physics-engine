@@ -1,5 +1,7 @@
 {
     "resId": "marble_ground",
+    "type": "box2d",
+    "flags": [],
     "box2d": {
         "type": "static",
         "dimensions": [

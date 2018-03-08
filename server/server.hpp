@@ -32,17 +32,20 @@ struct PlayerSession {
 };
 
 struct GameServer {
-  std::vector<ServerSceneManager *> sceneManagers;
-  std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
-      playerSessions;
-  std::map<std::string, PlayerSession *> playerSessionsByName;
-
   std::thread pushThread;
   bool pushingwholeSceneJson = false;
   JSONCache cache;
 
-  GameServer(int port);
+  GameServer(json conf);
   ~GameServer();
+
+private:
+  server m_server;
+  std::map<std::string, ServerSceneManager *> sceneManagers;
+  std::map<connection_hdl, PlayerSession *, std::owner_less<connection_hdl>>
+      playerSessions;
+  std::map<std::string, PlayerSession *> playerSessionsByName;
+  void loadMap(std::string id);
 
   void on_open(connection_hdl hdl);
   void on_close(connection_hdl hdl);
@@ -50,6 +53,7 @@ struct GameServer {
 
   void sendEvents(PlayerSession *session);
 
+  void addPlayer(std::string id, std::string mapName, json &def);
   void playerCreated(std::string id);
 
   void calculateDeltas();
@@ -58,9 +62,6 @@ struct GameServer {
   void pushDeltas();
   void pushEvents();
   void pushToClients();
-
-private:
-  server m_server;
 };
 
 #endif

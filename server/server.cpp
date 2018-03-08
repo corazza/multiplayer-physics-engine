@@ -1,6 +1,10 @@
 #include "server.hpp"
 
-GameServer::GameServer(int port) {
+GameServer::GameServer(json conf) {
+  for (auto mapId : conf["maps"]) {
+    loadMap(mapId);
+  }
+
   m_server.init_asio();
 
   m_server.set_open_handler(bind(&GameServer::on_open, this, ::_1));
@@ -8,10 +12,24 @@ GameServer::GameServer(int port) {
   m_server.set_message_handler(bind(&GameServer::on_message, this, ::_1, ::_2));
 
   m_server.set_reuse_addr(true);
+  int port = conf["port"];
+  m_server.listen(port);
+  m_server.start_accept();
+  pushThread = std::thread(&GameServer::pushToClients, this);
+  m_server.run();
+}
 
-  sceneManagers.push_back(new ServerSceneManager(&cache, "first"));
-  sceneManagers[0]->scene.callback = [=](Object *object) {
-    if (sceneManagers[0]->scene.isPlayer(object)) {
+GameServer::~GameServer() {
+  pushingwholeSceneJson = false;
+  pushThread.join();
+  m_server.stop_listening();
+}
+
+void GameServer::loadMap(std::string id) {
+  auto last = new ServerSceneManager(&cache, id);
+
+  last->scene.callback = [=](Object *object) {
+    if (last->scene.isPlayer(object)) {
       std::string a = "player_";
       std::string id =
           object->sceneId.substr(a.length(), object->sceneId.length());
@@ -19,22 +37,7 @@ GameServer::GameServer(int port) {
     }
   };
 
-  pushThread = std::thread(&GameServer::pushToClients, this);
-
-  m_server.listen(port);
-  m_server.start_accept();
-  m_server.run();
-}
-
-GameServer::~GameServer() {
-  for (std::vector<ServerSceneManager *>::iterator it = sceneManagers.begin();
-       it != sceneManagers.end(); ++it) {
-    delete *it;
-  }
-
-  pushingwholeSceneJson = false;
-  pushThread.join();
-  m_server.stop_listening();
+  sceneManagers.insert(std::make_pair(id, last));
 }
 
 void GameServer::on_open(connection_hdl hdl) {
@@ -82,9 +85,10 @@ void GameServer::on_message(connection_hdl hdl, server::message_ptr msg) {
   // TODO correct SM
   if (j["command"] == "login") {
     session.id = j["id"];
+    session.status = "not initialized";
 
     auto const &playerDefinition =
-        cache.getJSONDocument("serverdata/players/", "id_" + session.id);
+        cache.getJSONDocument("serverdata/players/", session.id);
     auto const &playerBodyDefinition =
         cache.getJSONDocument("res/objects/", playerDefinition["body"]);
 
@@ -93,19 +97,21 @@ void GameServer::on_message(connection_hdl hdl, server::message_ptr msg) {
     playerDef.insert(playerDefinition.begin(), playerDefinition.end());
     playerDef.insert(playerBodyDefinition.begin(), playerBodyDefinition.end());
 
+    auto &sceneManager = *sceneManagers.find(playerDef["map"])->second;
+    session.sceneManager = &sceneManager;
+
     // TODO functions for common events
     json creationEvent;
     creationEvent["type"] = "create";
     creationEvent["sceneId"] = "player_" + session.id;
     creationEvent["def"] = playerDef;
-
-    sceneManagers[0]->scene.submitEvents(json::array({creationEvent}));
-    session.status = "not initialized";
-    session.sceneManager = sceneManagers[0];
-    session.sceneManager->playerSessions.insert(std::make_pair(hdl, &session));
+    sceneManager.scene.submitEvents(json::array({creationEvent}));
 
     playerSessionsByName.insert(std::make_pair(session.id, &session));
-    session.sceneManager->playerSessionsByName.insert(
+
+    session.sceneManager->playerSessions.insert(
+        std::make_pair(session.hdl, &session));
+    sceneManager.playerSessionsByName.insert(
         std::make_pair(session.id, &session));
   } else if (j["command"] == "events") {
     session.sceneManager->scene.submitEvents(j["events"]);
@@ -136,8 +142,8 @@ void GameServer::playerCreated(std::string id) {
 }
 
 void GameServer::calculateDeltas() {
-  for (auto sceneManager_pt : sceneManagers) {
-    auto &sceneManager = *sceneManager_pt;
+  for (auto sceneManager_it : sceneManagers) {
+    auto &sceneManager = *sceneManager_it.second;
 
     // TODO callbacks to automatically add and remove SM's from active list
 
@@ -166,6 +172,7 @@ void GameServer::pushDeltas() {
   }
 }
 
+// TODO rewrite
 void GameServer::pushToClients() {
   pushingwholeSceneJson = true;
   int counter = 0;
