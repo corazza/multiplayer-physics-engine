@@ -34,6 +34,7 @@ struct Scene {
   Object *cameraFollow;
   std::function<void(Object *)> callback;
   std::function<void(Object *)> removedCallback;
+  std::function<void(json)> externalEventHandler;
   int spawnCounter = 0;
 
   Scene(JSONCache *cache)
@@ -52,6 +53,7 @@ private:
   json events = json::array();
   std::vector<std::pair<json, std::function<void(Object *)>>> objectCreation;
   std::vector<std::string> objectRemoval;
+  std::map<std::string, Object *> uses;
 
   Object *createObject(std::string id, json &def);
   void removeObject(std::string sceneId);

@@ -25,17 +25,35 @@ GameServer::~GameServer() {
   m_server.stop_listening();
 }
 
+std::string extractId(std::string sceneId) {
+  std::string a = "player_";
+  std::string id = sceneId.substr(a.length(), sceneId.length());
+}
+
+void GameServer::handleEvent(json event) {
+  if (event["type"] == "switch map") {
+    auto &session =
+        *playerSessionsByName.find(extractId(event["sceneId"]))->second;
+    session.status = "switching map";
+
+    json switchCommand;
+    switchCommand["command"] = "end scene";
+
+    m_server.send(session.hdl, switchCommand.dump(),
+                  websocketpp::frame::opcode::text);
+  }
+}
+
 void GameServer::loadMap(std::string id) {
   auto last = new ServerSceneManager(&cache, id);
 
   last->scene.callback = [=](Object *object) {
     if (last->scene.isPlayer(object)) {
-      std::string a = "player_";
-      std::string id =
-          object->sceneId.substr(a.length(), object->sceneId.length());
-      playerCreated(id);
+      playerCreated(extractId(object->sceneId));
     }
   };
+
+  last->scene.externalEventHandler = [=](json event) { handleEvent(event); };
 
   sceneManagers.insert(std::make_pair(id, last));
 }

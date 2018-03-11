@@ -15,12 +15,17 @@ Scene::~Scene() {
 
 void Scene::removeObject(std::string sceneId) {
   auto objects_it = objects.find(sceneId);
+  auto use_it = uses.find(sceneId);
+
+  objects.erase(objects_it);
+
+  if (use_it != uses.end())
+    uses.erase(use_it);
+
   Object *toDelete = objects_it->second;
 
   if (toDelete->body != nullptr)
     physics.world.DestroyBody(toDelete->body);
-
-  objects.erase(objects_it);
 
   if (removedCallback) {
     removedCallback(toDelete);
@@ -75,6 +80,14 @@ Object *Scene::createObject(std::string id, json &def) {
     object->fixedPosition = new FixedPosition;
     object->fixedPosition->pos = pos;
     object->fixedPosition->angle = angle;
+    object->fixedPosition->dim.x = def["physical"]["dimensions"][0];
+    object->fixedPosition->dim.y = def["physical"]["dimensions"][1];
+  }
+
+  if (def.find("use") != def.end()) {
+    object->use = new Use;
+    object->use->eventType = def["use"];
+    uses.insert(std::make_pair(id, object));
   }
 
   if (std::find(def["flags"].begin(), def["flags"].end(), "controlled") !=
@@ -147,38 +160,55 @@ json Scene::processEvents(json events) {
         object->controller->stopping = event["status"] == "stop";
       } else if (event["action"] == "jump") {
         object->controller->jumping = event["status"] == "start";
-      } else if (event["action"] == "spawn") {
-        if (event["status"] == "stop") {
-          b2Vec2 actionPosition(event["position"][0], event["position"][1]);
-          b2Vec2 callerPosition = object->position();
+      } else if (event["action"] == "spawn" && event["status"] == "stop") {
+        b2Vec2 actionPosition(event["position"][0], event["position"][1]);
+        b2Vec2 callerPosition = object->position();
 
-          b2Vec2 dpos = actionPosition - callerPosition;
-          dpos.Normalize();
-          b2Vec2 vel = dpos;
+        b2Vec2 dpos = actionPosition - callerPosition;
+        dpos.Normalize();
+        b2Vec2 vel = dpos;
 
-          vel *= 350;
-          dpos *= 5;
+        vel *= 350;
+        dpos *= 5;
 
-          actionPosition = callerPosition + dpos;
+        actionPosition = callerPosition + dpos;
 
-          json def = cache->getJSONDocument("res/objects/", "wooden_crate");
+        json def = cache->getJSONDocument("res/objects/", "wooden_crate");
 
-          def["angle"] = -atan2(dpos.x, dpos.y);
-          def["position"][0] = actionPosition.x;
-          def["position"][1] = actionPosition.y;
-          def["box2d"]["impulse"][0] = vel.x;
-          def["box2d"]["impulse"][1] = vel.y;
+        def["angle"] = -atan2(dpos.x, dpos.y);
+        def["position"][0] = actionPosition.x;
+        def["position"][1] = actionPosition.y;
+        def["box2d"]["impulse"][0] = vel.x;
+        def["box2d"]["impulse"][1] = vel.y;
 
-          json spawnEvent;
-          spawnEvent["type"] = "create";
-          spawnEvent["def"] = def;
-          spawnEvent["sceneId"] =
-              "spawn_" + id + "_" + std::to_string(spawnCounter++);
+        json spawnEvent;
+        spawnEvent["type"] = "create";
+        spawnEvent["def"] = def;
+        spawnEvent["sceneId"] =
+            "spawn_" + id + "_" + std::to_string(spawnCounter++);
 
-          nextBatch.push_back(spawnEvent);
+        nextBatch.push_back(spawnEvent);
+      } else if (event["action"] == "use" && event["status"] == "stop") {
+        auto callerPosition = object->position();
+
+        for (auto use : uses) {
+          auto &useObject = *use.second;
+          auto usePosition = useObject.position();
+          auto useDim = useObject.fixedPosition->dim;
+
+          if (callerPosition.x > usePosition.x - useDim.x &&
+              callerPosition.x < usePosition.x + useDim.x &&
+              callerPosition.y > usePosition.y - useDim.y &&
+              callerPosition.y < usePosition.y + useDim.y) {
+            json externalEvent;
+            externalEvent["type"] = "switch map";
+            externalEvent["to"] = useObject.use->eventType["leadsTo"];
+            externalEvent["sceneId"] = id;
+
+            if (externalEventHandler)
+              externalEventHandler(externalEvent);
+          }
         }
-      } else if (event["action"] == "use") {
-        std::cout << "use by " << id << std::endl;
       }
     } else if (event["type"] == "create") {
       std::string sceneId = event["sceneId"];

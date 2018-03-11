@@ -4,8 +4,11 @@
 #include <set>
 #include <string>
 
+#include "nlohmann/json.hpp"
 #include <Box2D/Box2D.h>
 #include <SDL2/SDL.h>
+
+using json = nlohmann::json;
 
 struct Controller {
   bool movingLeft = false;
@@ -17,9 +20,14 @@ struct Controller {
   bool active();
 };
 
+struct Use {
+  json eventType;
+};
+
 struct FixedPosition {
   b2Vec2 pos;
   float32 angle;
+  b2Vec2 dim;
 };
 
 struct Object {
@@ -29,6 +37,7 @@ struct Object {
 
   b2Body *body;
   FixedPosition *fixedPosition;
+  Use *use;
 
   std::set<Object *> colliding;
   Controller *controller = nullptr;

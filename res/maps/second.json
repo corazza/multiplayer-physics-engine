@@ -10,6 +10,17 @@
             "angle": 0
         },
         {
+            "resId": "castle_door",
+            "position": [
+                10,
+                -5.5
+            ],
+            "angle": 0,
+            "use": {
+                "leadsTo": "first"
+            }
+        },
+        {
             "resId": "marble_ground",
             "position": [
                 0,

@@ -15,7 +15,10 @@
                 10,
                 -5.5
             ],
-            "angle": 0
+            "angle": 0,
+            "use": {
+                "leadsTo": "second"
+            }
         },
         {
             "resId": "wooden_crate",

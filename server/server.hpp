@@ -51,17 +51,11 @@ private:
   void on_close(connection_hdl hdl);
   void on_message(connection_hdl hdl, server::message_ptr msg);
 
-  void sendEvents(PlayerSession *session);
-
-  void addPlayer(std::string id, std::string mapName, json &def);
   void playerCreated(std::string id);
-
   void calculateDeltas();
-  void clearEventBuffers();
-  // TODO combine into makeUpdate w/ lambda
   void pushDeltas();
-  void pushEvents();
   void pushToClients();
+  void handleEvent(json event);
 };
 
 #endif
